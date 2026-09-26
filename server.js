@@ -18,6 +18,78 @@ const MIME_TYPES = {
   '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 };
 
+// Load local environment variables if available
+const envPath = path.join(__dirname, '.env.local');
+if (fs.existsSync(envPath)) {
+  try {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const [key, ...vals] = trimmed.split('=');
+        const val = vals.join('=').replace(/^["']|["']$/g, '');
+        if (key && !process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    });
+  } catch (e) {}
+}
+
+const apiRoutes = {
+  '/api/verify-pin': require('./api/verify-pin'),
+  '/api/guests': require('./api/guests'),
+  '/api/sent-status': require('./api/sent-status'),
+  '/api/templates': require('./api/templates'),
+  '/api/default-excel': require('./api/default-excel')
+};
+
+function handleApi(handler, req, res) {
+  res.status = function(code) {
+    res.statusCode = code;
+    return this;
+  };
+  res.json = function(data) {
+    if (!res.headersSent) {
+      res.setHeader('Content-Type', 'application/json');
+    }
+    res.end(JSON.stringify(data));
+    return this;
+  };
+
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk;
+  });
+  req.on('end', () => {
+    if (body) {
+      try {
+        req.body = JSON.parse(body);
+      } catch (e) {
+        req.body = body;
+      }
+    } else {
+      req.body = {};
+    }
+    try {
+      const result = handler(req, res);
+      if (result && typeof result.catch === 'function') {
+        result.catch(err => {
+          console.error('API Error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: err.message || 'Internal Server Error' });
+          }
+        });
+      }
+    } catch (err) {
+      console.error('API Error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: err.message || 'Internal Server Error' });
+      }
+    }
+  });
+}
+
 const server = http.createServer((req, res) => {
   // Normalize URL
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -25,7 +97,7 @@ const server = http.createServer((req, res) => {
 
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -34,20 +106,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // API endpoint to serve default excel file
-  if (pathname === '/api/default-excel') {
-    if (fs.existsSync(DEFAULT_EXCEL)) {
-      const stat = fs.statSync(DEFAULT_EXCEL);
-      res.writeHead(200, {
-        'Content-Type': MIME_TYPES['.xlsx'],
-        'Content-Length': stat.size,
-        'Content-Disposition': 'inline; filename="invitation_list_36032.xlsx"'
-      });
-      fs.createReadStream(DEFAULT_EXCEL).pipe(res);
-    } else {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Default excel file not found' }));
-    }
+  // Handle API routes
+  if (apiRoutes[pathname]) {
+    handleApi(apiRoutes[pathname], req, res);
     return;
   }
 
