@@ -59,6 +59,20 @@ function fetchUrl(targetUrl, maxRedirects = 3) {
   });
 }
 
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return str
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#x2F;/gi, '/')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .trim();
+}
+
 function parseOpenGraph(html, targetUrl) {
   const meta = {
     url: targetUrl,
@@ -77,17 +91,17 @@ function parseOpenGraph(html, targetUrl) {
   const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
                        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
   if (ogTitleMatch) {
-    meta.title = ogTitleMatch[1];
+    meta.title = decodeHtmlEntities(ogTitleMatch[1]);
   } else {
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch) meta.title = titleMatch[1].trim();
+    if (titleMatch) meta.title = decodeHtmlEntities(titleMatch[1]);
   }
 
   // Match description
   const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
                       html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i) ||
                       html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
-  if (ogDescMatch) meta.description = ogDescMatch[1];
+  if (ogDescMatch) meta.description = decodeHtmlEntities(ogDescMatch[1]);
 
   // Match image
   const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
@@ -106,7 +120,7 @@ function parseOpenGraph(html, targetUrl) {
 
   // Site name
   const ogSiteMatch = html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i);
-  if (ogSiteMatch) meta.siteName = ogSiteMatch[1];
+  if (ogSiteMatch) meta.siteName = decodeHtmlEntities(ogSiteMatch[1]);
 
   return meta;
 }

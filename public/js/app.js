@@ -68,6 +68,8 @@
     statWithPhone: document.getElementById('statWithPhone'),
     statWithPhonePax: document.getElementById('statWithPhonePax'),
     mobileCardsList: document.getElementById('mobileCardsList'),
+    btnToggleTopConfig: document.getElementById('btnToggleTopConfig'),
+    topConfigGrid: document.getElementById('topConfigGrid'),
     toastContainer: document.getElementById('toastContainer'),
     previewModal: document.getElementById('previewModal'),
     btnCloseModal: document.getElementById('btnCloseModal'),
@@ -207,18 +209,35 @@
   // ===========================================================================
   // WhatsApp Formatting & URL Preview Helpers (Point 5 & 6)
   // ===========================================================================
+  function decodeHtmlEntities(str) {
+    if (!str) return '';
+    return str
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&#x27;/gi, "'")
+      .replace(/&#x2F;/gi, '/')
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec));
+  }
+
   function parseWhatsAppFormatting(text) {
     if (!text) return '';
-    let escaped = escapeHtml(text);
+    const clean = decodeHtmlEntities(text);
+    let escaped = escapeHtml(clean);
 
     // Monospace ```code```
     escaped = escaped.replace(/```([\s\S]+?)```/g, '<code>$1</code>');
-    // Bold *bold*
-    escaped = escaped.replace(/(^|[\s_~])\*([^\s*][^*]*?[^\s*]|[^\s*])\*(?=[\s_~]|$)/g, '$1<strong>$2</strong>');
+
+    // Bold *bold* - matches *text* surrounded by start/end/non-word characters
+    escaped = escaped.replace(/(^|[^\w*])\*([^*\r\n]+?)\*(?=[^\w*]|$)/g, '$1<strong>$2</strong>');
+
     // Italic _italic_
-    escaped = escaped.replace(/(^|[\s*~])_([^\s_][^_]*?[^\s_]|[^\s_])_(?=[\s*~]|$)/g, '$1<em>$2</em>');
+    escaped = escaped.replace(/(^|[^\w_])_([^_\r\n]+?)_(?=[^\w_]|$)/g, '$1<em>$2</em>');
+
     // Strikethrough ~strike~
-    escaped = escaped.replace(/(^|[\s*_])~([^\s~][^~]*?[^\s~]|[^\s~])~(?=[\s*_]|$)/g, '$1<del>$2</del>');
+    escaped = escaped.replace(/(^|[^\w~])~([^~\r\n]+?)~(?=[^\w~]|$)/g, '$1<del>$2</del>');
 
     // Auto-link URLs
     const urlRegex = /(https?:\/\/[^\s<]+)/g;
@@ -247,8 +266,8 @@
     container.innerHTML = `
       <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="wa-og-card">
         <div class="wa-og-body">
-          <div class="wa-og-domain">${escapeHtml(hostname)}</div>
           <div class="wa-og-title">Memuat pratinjau tautan...</div>
+          <div class="wa-og-domain">${escapeHtml(hostname.toLowerCase())}</div>
         </div>
       </a>
     `;
@@ -259,17 +278,21 @@
       const meta = await res.json();
       if (!meta) return;
 
+      const title = decodeHtmlEntities(meta.title || url);
+      const desc = decodeHtmlEntities(meta.description || '');
+      const domain = (meta.siteName || hostname).toLowerCase();
+
       container.innerHTML = `
         <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="wa-og-card">
           ${meta.image ? `
             <div class="wa-og-img-wrap">
-              <img src="${escapeHtml(meta.image)}" alt="${escapeHtml(meta.title || '')}" class="wa-og-img" onerror="this.parentElement.style.display='none'">
+              <img src="${escapeHtml(meta.image)}" alt="${escapeHtml(title)}" class="wa-og-img" onerror="this.parentElement.style.display='none'">
             </div>
           ` : ''}
           <div class="wa-og-body">
-            <div class="wa-og-domain">${escapeHtml(meta.siteName || hostname)}</div>
-            <div class="wa-og-title">${escapeHtml(meta.title || url)}</div>
-            ${meta.description ? `<div class="wa-og-desc">${escapeHtml(meta.description)}</div>` : ''}
+            <div class="wa-og-title">${escapeHtml(title)}</div>
+            ${desc ? `<div class="wa-og-desc">${escapeHtml(desc)}</div>` : ''}
+            <div class="wa-og-domain">${escapeHtml(domain)}</div>
           </div>
         </a>
       `;
@@ -285,7 +308,7 @@
     const states = {
       connecting: { dot: 'sync-dot-connecting', label: 'Menghubungkan...', footer: '🔵 Menghubungkan' },
       live: { dot: 'sync-dot-live', label: 'Realtime Aktif', footer: 'Sinkronisasi aktif 🟢' },
-      disconnected: { dot: 'sync-dot-offline', label: 'Offline', footer: '🔴 Offline' }
+      disconnected: { dot: 'sync-dot-offline', label: 'Cloud Tersimpan', footer: '🟢 Cloud Tersimpan (Polling)' }
     };
     const s = states[status] || states.disconnected;
     if (dom.syncDot) dom.syncDot.className = `sync-dot ${s.dot}`;
@@ -366,11 +389,45 @@
   }
 
   // ===========================================================================
-  // Supabase Realtime Subscription
+  // Supabase Realtime Subscription & Offline Fallback Polling
   // ===========================================================================
+  let realtimePollingTimer = null;
+
+  function startFallbackPolling() {
+    if (realtimePollingTimer) return;
+    realtimePollingTimer = setInterval(async () => {
+      try {
+        const cloudStatuses = await apiGet('/api/sent-status');
+        if (cloudStatuses && typeof cloudStatuses === 'object') {
+          let changed = false;
+          for (const k of Object.keys(cloudStatuses)) {
+            if (!state.sentStatuses[k]) {
+              state.sentStatuses[k] = true;
+              changed = true;
+            }
+          }
+          if (changed) {
+            updateStatsAndProgress();
+            renderTable();
+          }
+        }
+      } catch (e) {
+        // Silently handle
+      }
+    }, 20000);
+  }
+
+  function stopFallbackPolling() {
+    if (realtimePollingTimer) {
+      clearInterval(realtimePollingTimer);
+      realtimePollingTimer = null;
+    }
+  }
+
   function setupRealtime() {
     if (!supabaseClient) {
       setSyncStatus('disconnected');
+      startFallbackPolling();
       return;
     }
 
@@ -399,8 +456,10 @@
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setSyncStatus('live');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          stopFallbackPolling();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setSyncStatus('disconnected');
+          startFallbackPolling();
         }
       });
   }
@@ -629,11 +688,23 @@
     }
     const row = state.rawRows[state.selectedPreviewIndex] || state.rawRows[0];
     const compiled = compileMessage(state.currentTemplate, row);
-    const html = escapeHtml(compiled).replace(
-      /(https?:\/\/[^\s]+)/g,
-      '<a href="$1" target="_blank" style="color:#0284C7;text-decoration:underline;font-weight:600;">$1</a>'
-    );
-    dom.livePreviewBubble.innerHTML = html || '<em>(Pesan kosong)</em>';
+    const formattedHtml = parseWhatsAppFormatting(compiled);
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    dom.livePreviewBubble.innerHTML = `
+      <div id="livePreviewUrlWrap" class="wa-preview-thumb-wrap"></div>
+      <div class="wa-msg-text">${formattedHtml || '<em>(Pesan kosong)</em>'}</div>
+      <div class="wa-meta-time">
+        <span>${timeStr}</span>
+        <span class="wa-ticks">✓✓</span>
+      </div>
+    `;
+
+    const firstUrl = extractFirstUrl(compiled);
+    if (firstUrl) {
+      renderUrlPreview(firstUrl, document.getElementById('livePreviewUrlWrap'));
+    }
   }
 
   function updateCharCounter() {
@@ -902,7 +973,7 @@
     dom.statPendingCount.textContent = pendingCount;
     if (dom.statPendingPax) dom.statPendingPax.textContent = `👥 ${pendingPax} Tamu`;
 
-    dom.statWithPhone.textContent = withPhone;
+    if (dom.statWithPhone) dom.statWithPhone.textContent = withPhone;
     if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${withPhonePax} Tamu`;
 
     dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} Undangan · ${sentPax}/${totalPax} Tamu)`;
@@ -936,8 +1007,8 @@
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
     dom.modalMessageContent.innerHTML = `
+      <div id="modalUrlPreviewWrap" class="wa-preview-thumb-wrap"></div>
       <div class="wa-msg-text">${formattedHtml}</div>
-      <div id="modalUrlPreviewWrap"></div>
       <div class="wa-meta-time">
         <span>${timeStr}</span>
         <span class="wa-ticks">✓✓</span>
@@ -1213,9 +1284,18 @@
         }
       });
     }
+
     if (dom.customConfirmModal) {
       dom.customConfirmModal.addEventListener('click', (e) => {
         if (e.target === dom.customConfirmModal) closeConfirmModal();
+      });
+    }
+
+    if (dom.btnToggleTopConfig && dom.topConfigGrid) {
+      dom.btnToggleTopConfig.addEventListener('click', () => {
+        const isExpanded = dom.topConfigGrid.classList.toggle('show-mobile');
+        dom.btnToggleTopConfig.classList.toggle('expanded', isExpanded);
+        setupLucideIcons();
       });
     }
 

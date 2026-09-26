@@ -19,8 +19,8 @@
     }
   </script>
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Lucide Icons (Local vendor to prevent Safari WebKit ITP warnings) -->
+  <script src="/vendor/lucide.min.js"></script>
 
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -66,11 +66,11 @@
         </div>
         <div>
           <h1 class="brand-title">Viding WA Generator</h1>
-          <p class="brand-subtitle">Generator Link wa.me & Template Pesan Undangan</p>
+          <p class="brand-subtitle">Generator Link wa.me &amp; Template Pesan Undangan</p>
         </div>
       </div>
 
-      <!-- Quick Metrics Summary -->
+      <!-- Quick Metrics Summary (Clean 3-Metric Bar) -->
       <div class="header-metrics" id="headerStats">
         <div class="metric-card">
           <span class="metric-title">Total Undangan</span>
@@ -87,11 +87,6 @@
           <span class="metric-num" id="statPendingCount">0</span>
           <span class="metric-sub" id="statPendingPax">👥 0 Tamu</span>
         </div>
-        <div class="metric-card metric-info">
-          <span class="metric-title">Ada WhatsApp</span>
-          <span class="metric-num" id="statWithPhone">0</span>
-          <span class="metric-sub" id="statWithPhonePax">👥 0 Tamu</span>
-        </div>
         <!-- Realtime sync indicator -->
         <div class="metric-card sync-indicator" id="syncIndicator" title="Status sinkronisasi Realtime">
           <span class="sync-dot" id="syncDot"></span>
@@ -104,8 +99,22 @@
   <!-- Main Content Layout -->
   <main class="page-container">
     
-    <!-- TOP SECTION: Configuration & Template Editor (Side-by-Side 2 Columns) -->
-    <section class="top-config-grid">
+    <!-- Mobile Collapsible Toggle Bar for Top Configuration -->
+    <div class="mobile-config-toggle-bar">
+      <button type="button" id="btnToggleTopConfig" class="btn-toggle-config">
+        <span class="btn-toggle-left">
+          <i data-lucide="sliders-horizontal"></i>
+          <span>Pengaturan Data &amp; Template</span>
+        </span>
+        <span class="btn-toggle-right">
+          <span class="toggle-hint-badge">Buka/Tutup</span>
+          <i data-lucide="chevron-down" id="chevronConfigIcon"></i>
+        </span>
+      </button>
+    </div>
+
+    <!-- TOP SECTION: Configuration & Template Editor (Side-by-Side 2 Columns, Collapsible on Mobile) -->
+    <section class="top-config-grid" id="topConfigGrid">
       
       <!-- Card 1: Data Excel & Tag Placeholders -->
       <div class="card">
