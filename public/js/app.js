@@ -27,7 +27,8 @@
     searchQuery: '',
     selectedPreviewIndex: 0,
     sentStatuses: {},
-    currentTemplate: ''
+    currentTemplate: '',
+    expandedGuestIndex: null
   };
 
   // ===========================================================================
@@ -246,59 +247,6 @@
     // Convert newlines to <br>
     escaped = escaped.replace(/\n/g, '<br>');
     return escaped;
-  }
-
-  function extractFirstUrl(text) {
-    if (!text) return null;
-    const match = text.match(/(https?:\/\/[^\s]+)/);
-    return match ? match[1] : null;
-  }
-
-  async function renderUrlPreview(url, container) {
-    if (!url || !container) return;
-    let hostname = '';
-    try {
-      hostname = new URL(url).hostname;
-    } catch {
-      hostname = url;
-    }
-
-    container.innerHTML = `
-      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="wa-og-card">
-        <div class="wa-og-body">
-          <div class="wa-og-title">Memuat pratinjau tautan...</div>
-          <div class="wa-og-domain">${escapeHtml(hostname.toLowerCase())}</div>
-        </div>
-      </a>
-    `;
-
-    try {
-      const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
-      if (!res.ok) return;
-      const meta = await res.json();
-      if (!meta) return;
-
-      const title = decodeHtmlEntities(meta.title || url);
-      const desc = decodeHtmlEntities(meta.description || '');
-      const domain = (meta.siteName || hostname).toLowerCase();
-
-      container.innerHTML = `
-        <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="wa-og-card">
-          ${meta.image ? `
-            <div class="wa-og-img-wrap">
-              <img src="${escapeHtml(meta.image)}" alt="${escapeHtml(title)}" class="wa-og-img" onerror="this.parentElement.style.display='none'">
-            </div>
-          ` : ''}
-          <div class="wa-og-body">
-            <div class="wa-og-title">${escapeHtml(title)}</div>
-            ${desc ? `<div class="wa-og-desc">${escapeHtml(desc)}</div>` : ''}
-            <div class="wa-og-domain">${escapeHtml(domain)}</div>
-          </div>
-        </a>
-      `;
-    } catch (e) {
-      console.warn('Link preview fetch failed:', e);
-    }
   }
 
   // ===========================================================================
@@ -693,18 +641,12 @@
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
     dom.livePreviewBubble.innerHTML = `
-      <div id="livePreviewUrlWrap" class="wa-preview-thumb-wrap"></div>
       <div class="wa-msg-text">${formattedHtml || '<em>(Pesan kosong)</em>'}</div>
       <div class="wa-meta-time">
         <span>${timeStr}</span>
         <span class="wa-ticks">✓✓</span>
       </div>
     `;
-
-    const firstUrl = extractFirstUrl(compiled);
-    if (firstUrl) {
-      renderUrlPreview(firstUrl, document.getElementById('livePreviewUrlWrap'));
-    }
   }
 
   function updateCharCounter() {
@@ -848,66 +790,91 @@
       tr.appendChild(tdActions);
       tbody.appendChild(tr);
 
-      // 2. Native Mobile Touch Card
+      // 2. Native Mobile Touch Card with Smooth Single-Accordion
       if (dom.mobileCardsList) {
+        const isExpanded = state.expandedGuestIndex === originalIndex;
         const card = document.createElement('div');
-        card.className = `mobile-guest-card ${isSent ? 'card-sent' : ''}`;
+        card.className = `mobile-guest-card ${isSent ? 'card-sent' : ''} ${isExpanded ? 'is-expanded' : ''}`;
 
         card.innerHTML = `
-          <div class="mobile-guest-header">
-            <div class="mobile-guest-main">
-              <div class="mobile-guest-num-row">
-                <span class="mobile-guest-num">#${originalIndex + 1}</span>
-                ${sapaan ? `<span class="mobile-guest-sapaan">${escapeHtml(sapaan)}</span>` : ''}
+          <div class="mobile-guest-row-header">
+            <div class="mobile-guest-summary-left">
+              <span class="mobile-guest-num">#${originalIndex + 1}</span>
+              <span class="mobile-guest-name">${escapeHtml(guestName)}</span>
+              <span class="mobile-pax-badge">👥 ${pax} Tamu</span>
+            </div>
+            <div class="mobile-guest-summary-right">
+              <button type="button" class="mobile-status-pill ${isSent ? 'status-sent' : 'status-pending'}" title="Klik untuk ubah status kirim">
+                <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:11px;height:11px;"></i>
+                <span>${isSent ? 'Terkirim' : 'Belum'}</span>
+              </button>
+              <span class="mobile-chevron-wrap">
+                <i data-lucide="chevron-down" class="mobile-chevron-icon" style="width:15px;height:15px;"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="mobile-guest-drawer">
+            <div class="mobile-drawer-inner">
+              <div class="mobile-drawer-meta">
+                ${sapaan ? `<span class="mobile-meta-item"><strong>Sapaan:</strong> ${escapeHtml(sapaan)}</span>` : ''}
+                ${label ? `<span class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</span>` : ''}
+                <span class="mobile-meta-item">
+                  <strong>Nomor WA:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">Tanpa WhatsApp</em>'}
+                </span>
+                ${(link && link.startsWith('http')) ? `
+                  <span class="mobile-meta-item">
+                    <strong>Undangan:</strong> <a href="${escapeHtml(link)}" target="_blank" class="mobile-meta-link">${escapeHtml(link)}</a>
+                  </span>
+                ` : ''}
               </div>
-              <div class="mobile-guest-name">${escapeHtml(guestName)}</div>
-              <div class="mobile-guest-badges">
-                <span class="mobile-pax-badge">👥 ${pax} Tamu</span>
-                ${label ? `<span class="mobile-category-chip">${escapeHtml(label)}</span>` : ''}
+
+              <div class="mobile-drawer-actions">
+                <button type="button" class="btn btn-outline btn-sm btn-drawer-preview">
+                  <i data-lucide="eye"></i> Preview
+                </button>
+                <button type="button" class="btn btn-primary btn-sm btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}">
+                  <i data-lucide="send"></i> Buka WA
+                </button>
               </div>
             </div>
-            <button type="button" class="mobile-status-toggle ${isSent ? 'status-sent' : 'status-pending'}">
-              <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:13px;height:13px;"></i>
-              ${isSent ? 'Terkirim' : 'Belum Kirim'}
-            </button>
-          </div>
-
-          <div class="mobile-guest-contact">
-            <span class="mobile-contact-pill ${phoneInfo.isValid ? 'has-phone' : ''}">
-              <i data-lucide="${phoneInfo.isValid ? 'check' : 'phone-off'}" style="width:13px;height:13px;"></i>
-              ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : 'Tanpa WhatsApp'}
-            </span>
-            ${(link && link.startsWith('http')) ? `
-              <a href="${escapeHtml(link)}" target="_blank" class="mobile-link-chip" title="${escapeHtml(link)}">
-                <i data-lucide="external-link" style="width:12px;height:12px;"></i> Undangan
-              </a>
-            ` : ''}
-          </div>
-
-          <div class="mobile-card-actions">
-            <button type="button" class="btn btn-outline btn-mobile-preview">
-              <i data-lucide="eye"></i> Preview
-            </button>
-            <button type="button" class="btn btn-primary btn-mobile-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}">
-              <i data-lucide="send"></i> Buka WA
-            </button>
           </div>
         `;
 
-        const btnMobStatus = card.querySelector('.mobile-status-toggle');
-        btnMobStatus.addEventListener('click', async () => {
+        // Click anywhere on row header to expand/collapse (single accordion)
+        const rowHeader = card.querySelector('.mobile-guest-row-header');
+        rowHeader.addEventListener('click', (e) => {
+          if (e.target.closest('.mobile-status-pill')) return;
+
+          if (state.expandedGuestIndex === originalIndex) {
+            state.expandedGuestIndex = null;
+          } else {
+            state.expandedGuestIndex = originalIndex;
+          }
+          renderTable();
+        });
+
+        // Quick status toggle directly on pill
+        const statusBtn = card.querySelector('.mobile-status-pill');
+        statusBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
           const next = !isRowSent(row, originalIndex);
           await setRowSent(row, originalIndex, next);
           renderTable();
           showToast(next ? `${guestName} ditandai Sudah Dikirim!` : `${guestName} ditandai Belum Dikirim.`, 'success');
         });
 
-        const btnMobPreview = card.querySelector('.btn-mobile-preview');
-        btnMobPreview.addEventListener('click', () => openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo));
+        // Drawer buttons
+        const btnPrev = card.querySelector('.btn-drawer-preview');
+        btnPrev.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo);
+        });
 
-        const btnMobSend = card.querySelector('.btn-mobile-send');
+        const btnSend = card.querySelector('.btn-drawer-send');
         if (phoneInfo.isValid) {
-          btnMobSend.addEventListener('click', async () => {
+          btnSend.addEventListener('click', async (e) => {
+            e.stopPropagation();
             window.open(waUrl, '_blank');
             await setRowSent(row, originalIndex, true);
             renderTable();
@@ -1007,18 +974,12 @@
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
     dom.modalMessageContent.innerHTML = `
-      <div id="modalUrlPreviewWrap" class="wa-preview-thumb-wrap"></div>
       <div class="wa-msg-text">${formattedHtml}</div>
       <div class="wa-meta-time">
         <span>${timeStr}</span>
         <span class="wa-ticks">✓✓</span>
       </div>
     `;
-
-    const firstUrl = extractFirstUrl(compiledMsg);
-    if (firstUrl) {
-      renderUrlPreview(firstUrl, document.getElementById('modalUrlPreviewWrap'));
-    }
 
     dom.modalWaLinkInput.value = waUrl || '(Nomor WA tidak tersedia)';
     dom.btnModalCopyLink.disabled = !phoneInfo.isValid;
