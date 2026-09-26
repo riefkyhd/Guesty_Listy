@@ -1318,3 +1318,178 @@ textarea#templateInput {
   font-size: 0.8rem;
   color: var(--slate-500);
 }
+
+/* ==========================================================================
+   PIN Gate Overlay
+   ========================================================================== */
+
+.pin-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.pin-card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 48px 40px 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5);
+}
+
+.pin-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #16a34a, #059669);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.4);
+}
+
+.pin-icon i {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.pin-title {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 8px;
+}
+
+.pin-subtitle {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 28px;
+}
+
+.pin-input-wrapper {
+  margin-bottom: 20px;
+}
+
+.pin-input {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 1.2rem;
+  font-family: var(--font-mono);
+  letter-spacing: 6px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pin-input:focus {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.pin-input::placeholder {
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.pin-error {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: #f87171;
+  animation: fadeInUp 0.2s ease;
+}
+
+.pin-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.pin-hint {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.pin-input-shake {
+  animation: shake 0.4s ease;
+  border-color: #ef4444 !important;
+}
+
+/* ==========================================================================
+   Realtime Sync Indicator
+   ========================================================================== */
+
+.sync-indicator {
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  min-width: 120px;
+  cursor: default;
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #94a3b8;
+  transition: background 0.3s;
+}
+
+.sync-dot-connecting {
+  background: #f59e0b;
+  animation: pulse-dot 1.2s ease infinite;
+}
+
+.sync-dot-live {
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+  animation: pulse-dot-green 2s ease infinite;
+}
+
+.sync-dot-offline {
+  background: #ef4444;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes pulse-dot-green {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+

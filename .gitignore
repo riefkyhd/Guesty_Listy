@@ -3,3 +3,5 @@ node_modules/
 npm-debug.log*
 .vscode/
 .idea/
+.env
+.env.local

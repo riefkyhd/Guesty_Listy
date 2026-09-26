@@ -1,5 +1,5 @@
 {
-  "name": "viding-wa-template-generator",
+  "name": "guesty-listy",
   "version": "1.0.0",
   "description": "WhatsApp wa.me message & link generator from Excel template for wedding invitations",
   "main": "server.js",
@@ -7,7 +7,10 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1"
+  },
   "keywords": ["whatsapp", "wa.me", "viding", "invitation", "excel"],
-  "author": "Dhifa",
+  "author": "Dhifa & Riefky",
   "license": "MIT"
 }
