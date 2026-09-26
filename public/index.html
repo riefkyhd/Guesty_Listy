@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viding WA Generator - Undangan WhatsApp</title>
+  <meta name="description" content="Generator template pesan WhatsApp dan link wa.me otomatis dari data Excel undangan pernikahan Viding.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  
+  <!-- SheetJS (Offline local vendor with CDN fallback) -->
+  <script src="/vendor/xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="light-theme">
+
+  <!-- Top App Navigation -->
+  <header class="app-navbar">
+    <div class="nav-container">
+      <div class="brand-group">
+        <div class="brand-avatar">
+          <i data-lucide="send"></i>
+        </div>
+        <div>
+          <h1 class="brand-title">Viding WA Generator</h1>
+          <p class="brand-subtitle">Generator Link wa.me & Template Pesan Undangan</p>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Summary -->
+      <div class="header-metrics" id="headerStats">
+        <div class="metric-card">
+          <span class="metric-title">Total Tamu</span>
+          <span class="metric-num" id="statTotalGuests">0</span>
+        </div>
+        <div class="metric-card metric-success">
+          <span class="metric-title">Sudah Dikirim</span>
+          <span class="metric-num" id="statSentCount">0</span>
+        </div>
+        <div class="metric-card metric-warning">
+          <span class="metric-title">Belum Dikirim</span>
+          <span class="metric-num" id="statPendingCount">0</span>
+        </div>
+        <div class="metric-card metric-info">
+          <span class="metric-title">Ada WhatsApp</span>
+          <span class="metric-num" id="statWithPhone">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="page-container">
+    
+    <!-- TOP SECTION: Configuration & Template Editor (Side-by-Side 2 Columns) -->
+    <section class="top-config-grid">
+      
+      <!-- Card 1: Data Excel & Tag Placeholders -->
+      <div class="card">
+        <div class="card-header">
+          <div class="step-badge">1</div>
+          <div class="header-text">
+            <h2 class="card-title">Sumber Data Excel</h2>
+            <p class="card-subtitle">Pilih file undangan atau gunakan data bawaan</p>
+          </div>
+          <button id="btnReloadDefault" class="btn btn-outline btn-sm ml-auto" title="Muat Ulang File Default invitation_list_36032.xlsx">
+            <i data-lucide="refresh-cw"></i> Muat Template Bawaan
+          </button>
+        </div>
+
+        <div class="card-body">
+          <!-- Dropzone -->
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="dropzone-input">
+            <div class="dropzone-icon">
+              <i data-lucide="file-spreadsheet"></i>
+            </div>
+            <div class="dropzone-text">
+              <p class="dropzone-main">Klik atau seret file <strong>Excel (.xlsx / .xls)</strong> ke sini</p>
+              <p class="dropzone-sub">Otomatis membaca nama, sapaan, link, dan nomor WhatsApp</p>
+            </div>
+          </div>
+
+          <!-- File Info & Column Selector Bar -->
+          <div class="file-loaded-banner" id="fileStatusBar" style="display: none;">
+            <div class="file-info-left">
+              <i data-lucide="check-circle" class="text-success-icon"></i>
+              <div>
+                <strong id="loadedFileName">-</strong>
+                <span id="loadedFileDetails" class="text-muted block-text">-</span>
+              </div>
+            </div>
+            <div class="phone-select-wrapper">
+              <label for="phoneColSelect">Kolom WhatsApp:</label>
+              <select id="phoneColSelect" class="form-select"></select>
+            </div>
+          </div>
+
+          <!-- Available Tags List -->
+          <div class="tags-section">
+            <div class="tags-header">
+              <span class="tags-title"><i data-lucide="tag"></i> Tag Kolom yang Tersedia:</span>
+              <span class="tags-desc">Klik tag di bawah untuk menyisipkan ke pesan</span>
+            </div>
+            <div class="tags-list" id="tagsList">
+              <!-- Dynamically populated tags -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Template Pesan & Live WhatsApp Preview -->
+      <div class="card">
+        <div class="card-header">
+          <div class="step-badge">2</div>
+          <div class="header-text">
+            <h2 class="card-title">Template Pesan WhatsApp</h2>
+            <p class="card-subtitle">Sesuaikan pesan dengan placeholder otomatis</p>
+          </div>
+
+          <!-- Preset Selector -->
+          <div class="preset-dropdown-wrapper ml-auto">
+            <select id="templatePresetSelect" class="form-select form-select-sm">
+              <option value="formal">💍 Format Resmi (Formal)</option>
+              <option value="casual">🌿 Format Santai (Teman/Sahabat)</option>
+              <option value="singkat">⚡ Format Singkat (Reminder)</option>
+              <option value="custom">✏️ Template Kustom Saya</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Textarea for Template -->
+          <div class="editor-container">
+            <textarea id="templateInput" rows="7" placeholder="Tuliskan format pesan undangan di sini... Gunakan tag seperti [Sapaan], [Nama], [Link]"></textarea>
+            <div class="editor-footer">
+              <span id="charCounter" class="char-count">0 karakter | 0 kata</span>
+              <div class="editor-buttons">
+                <button id="btnSaveCustomTemplate" class="btn btn-outline btn-xs" title="Simpan sebagai template kustom">
+                  <i data-lucide="save"></i> Simpan
+                </button>
+                <button id="btnResetTemplate" class="btn btn-outline btn-xs text-danger" title="Kembalikan ke format awal">
+                  <i data-lucide="rotate-ccw"></i> Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live WhatsApp Bubble Preview -->
+          <div class="preview-card">
+            <div class="preview-header">
+              <div class="preview-title">
+                <i data-lucide="smartphone"></i>
+                <span>Tampilan di WhatsApp Penerima:</span>
+              </div>
+              <div class="preview-picker">
+                <label for="previewGuestSelect">Preview untuk:</label>
+                <select id="previewGuestSelect" class="form-select form-select-xs"></select>
+              </div>
+            </div>
+            <div class="wa-chat-window">
+              <div class="wa-chat-bubble" id="livePreviewBubble">
+                <!-- Preview message loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- BOTTOM SECTION: Full-Width Recipient Table & wa.me Actions -->
+    <section class="bottom-table-section">
+      <div class="card">
+        
+        <!-- Table Header & Progress Bar -->
+        <div class="card-header table-card-header">
+          <div class="title-with-badge">
+            <div class="step-badge">3</div>
+            <div>
+              <h2 class="card-title">Daftar Penerima Undangan & Generator wa.me</h2>
+              <p class="card-subtitle">Kelola pengiriman, salin link wa.me, atau kirim langsung ke WhatsApp</p>
+            </div>
+          </div>
+
+          <!-- Progress Bar Box -->
+          <div class="progress-container">
+            <div class="progress-labels">
+              <span>Progress Pengiriman:</span>
+              <strong id="progressPercentage">0% (0/0)</strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressBarFill" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="table-toolbar">
+          <!-- Search Input -->
+          <div class="search-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Cari nama tamu, nomor WhatsApp, atau kategori label..." autocomplete="off">
+            <button id="btnClearSearch" class="btn-clear" style="display: none;" title="Hapus pencarian">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="filter-group" id="filterPills">
+            <button class="filter-tab active" data-filter="all">Semua (<span id="countFilterAll">0</span>)</button>
+            <button class="filter-tab tab-pending" data-filter="pending">⏳ Belum Kirim (<span id="countFilterPending">0</span>)</button>
+            <button class="filter-tab tab-sent" data-filter="sent">🟢 Sudah Kirim (<span id="countFilterSent">0</span>)</button>
+            <button class="filter-tab" data-filter="has-phone">Ada WA (<span id="countFilterHasPhone">0</span>)</button>
+            <button class="filter-tab" data-filter="no-phone">Tanpa WA (<span id="countFilterNoPhone">0</span>)</button>
+          </div>
+
+          <!-- Bulk Status Actions -->
+          <div class="bulk-tools">
+            <button id="btnMarkAllSent" class="btn btn-outline btn-sm" title="Tandai seluruh baris yang tampil sebagai Terkirim">
+              <i data-lucide="check-check"></i> Tandai Terkirim
+            </button>
+            <button id="btnResetAllSent" class="btn btn-outline btn-sm text-danger" title="Reset semua status pengiriman ke Belum Kirim">
+              <i data-lucide="rotate-ccw"></i> Reset Status
+            </button>
+          </div>
+        </div>
+
+        <!-- Full-Width Responsive Table -->
+        <div class="table-container">
+          <table class="data-table" id="recipientsTable">
+            <thead>
+              <tr>
+                <th class="col-num">No</th>
+                <th class="col-status">Status Kirim</th>
+                <th class="col-name">Nama Tamu & Kategori</th>
+                <th class="col-phone">Nomor WhatsApp</th>
+                <th class="col-link">Link Undangan</th>
+                <th class="col-actions">Aksi WhatsApp</th>
+              </tr>
+            </thead>
+            <tbody id="recipientsTableBody">
+              <!-- Dynamically populated recipient rows -->
+            </tbody>
+          </table>
+
+          <!-- Empty State -->
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon-wrap">
+              <i data-lucide="inbox"></i>
+            </div>
+            <h3>Tidak Ada Data yang Sesuai</h3>
+            <p>Tidak ada tamu yang cocok dengan filter atau pencarian Anda saat ini.</p>
+          </div>
+        </div>
+
+        <!-- Table Footer Info -->
+        <div class="table-footer-bar">
+          <div class="table-footer-count" id="showingCountText">Menampilkan 0 tamu</div>
+          <div class="table-footer-instructions">
+            <span><i data-lucide="info"></i> Klik badge <strong>Status</strong> pada baris untuk mengubah status antara <em>Sudah Dikirim</em> dan <em>Belum Dikirim</em>.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Clean Minimalist Footer -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>Undangan Pernikahan <strong>Dhifa & Riefky</strong> &bull; Viding WA Template Generator (Localhost)</p>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-shelf" id="toastContainer"></div>
+
+  <!-- Detail Preview Modal -->
+  <div class="modal-overlay" id="previewModal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 class="modal-heading" id="modalGuestTitle">Detail Pesan Undangan</h3>
+        <button class="modal-close-btn" id="btnCloseModal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-content">
+        <div class="modal-meta-row" id="modalGuestInfo"></div>
+        <div class="modal-bubble" id="modalMessageContent"></div>
+        <div class="modal-input-group">
+          <label>Link wa.me:</label>
+          <div class="input-with-button">
+            <input type="text" id="modalWaLinkInput" readonly>
+            <button id="btnModalCopyLink" class="btn btn-outline btn-sm"><i data-lucide="copy"></i> Salin Link</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-bottom">
+        <button id="btnModalCopyText" class="btn btn-outline"><i data-lucide="copy"></i> Salin Teks Pesan</button>
+        <button id="btnModalSendWa" class="btn btn-primary"><i data-lucide="send"></i> Buka di WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript File -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
