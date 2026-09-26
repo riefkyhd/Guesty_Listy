@@ -792,21 +792,27 @@
         const isExpanded = state.expandedGuestIndex === originalIndex;
         const card = document.createElement('div');
         card.className = `mobile-guest-card ${isSent ? 'card-sent' : ''} ${isExpanded ? 'is-expanded' : ''}`;
+        card.dataset.index = originalIndex;
 
         card.innerHTML = `
-          <div class="mobile-guest-row-header">
-            <div class="mobile-guest-summary-left">
-              <span class="mobile-guest-num">#${originalIndex + 1}</span>
-              <span class="mobile-guest-name">${escapeHtml(guestName)}</span>
-              <span class="mobile-pax-badge">👥 ${pax} Tamu</span>
+          <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
+            <div class="mobile-guest-header-main">
+              <div class="mobile-guest-title-row">
+                <span class="mobile-guest-num">#${originalIndex + 1}</span>
+                <span class="mobile-guest-name">${escapeHtml(guestName)}</span>
+              </div>
+              <div class="mobile-guest-sub-row">
+                <span class="mobile-pax-badge"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} Tamu</span>
+                ${label ? `<span class="mobile-category-badge">${escapeHtml(label)}</span>` : ''}
+              </div>
             </div>
-            <div class="mobile-guest-summary-right">
+            <div class="mobile-guest-header-actions">
               <button type="button" class="mobile-status-pill ${isSent ? 'status-sent' : 'status-pending'}" title="Klik untuk ubah status kirim">
                 <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:11px;height:11px;"></i>
                 <span>${isSent ? 'Terkirim' : 'Belum'}</span>
               </button>
               <span class="mobile-chevron-wrap">
-                <i data-lucide="chevron-down" class="mobile-chevron-icon" style="width:15px;height:15px;"></i>
+                <i data-lucide="chevron-down" class="mobile-chevron-icon" style="width:16px;height:16px;"></i>
               </span>
             </div>
           </div>
@@ -814,15 +820,14 @@
           <div class="mobile-guest-drawer">
             <div class="mobile-drawer-inner">
               <div class="mobile-drawer-meta">
-                ${sapaan ? `<span class="mobile-meta-item"><strong>Sapaan:</strong> ${escapeHtml(sapaan)}</span>` : ''}
-                ${label ? `<span class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</span>` : ''}
-                <span class="mobile-meta-item">
+                ${label ? `<div class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</div>` : ''}
+                <div class="mobile-meta-item">
                   <strong>Nomor WA:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">Tanpa WhatsApp</em>'}
-                </span>
+                </div>
                 ${(link && link.startsWith('http')) ? `
-                  <span class="mobile-meta-item">
-                    <strong>Undangan:</strong> <a href="${escapeHtml(link)}" target="_blank" class="mobile-meta-link">${escapeHtml(link)}</a>
-                  </span>
+                  <div class="mobile-meta-item">
+                    <strong>Undangan:</strong> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="mobile-meta-link">${escapeHtml(link)}</a>
+                  </div>
                 ` : ''}
               </div>
 
@@ -838,17 +843,18 @@
           </div>
         `;
 
-        // Click anywhere on row header to expand/collapse (single accordion)
+        // Click anywhere on row header to expand/collapse (smooth accordion with viewport anchor)
         const rowHeader = card.querySelector('.mobile-guest-row-header');
         rowHeader.addEventListener('click', (e) => {
           if (e.target.closest('.mobile-status-pill')) return;
+          toggleMobileCard(card, originalIndex);
+        });
 
-          if (state.expandedGuestIndex === originalIndex) {
-            state.expandedGuestIndex = null;
-          } else {
-            state.expandedGuestIndex = originalIndex;
+        rowHeader.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleMobileCard(card, originalIndex);
           }
-          renderTable();
         });
 
         // Quick status toggle directly on pill
@@ -884,6 +890,54 @@
     });
 
     setupLucideIcons();
+  }
+
+  function toggleMobileCard(targetCard, index) {
+    const isCurrentlyExpanded = targetCard.classList.contains('is-expanded');
+    const initialTop = targetCard.getBoundingClientRect().top;
+
+    if (isCurrentlyExpanded) {
+      targetCard.classList.remove('is-expanded');
+      targetCard.querySelector('.mobile-guest-row-header')?.setAttribute('aria-expanded', 'false');
+      state.expandedGuestIndex = null;
+    } else {
+      // Single accordion mode: close any other open card
+      const prevExpanded = dom.mobileCardsList.querySelector('.mobile-guest-card.is-expanded');
+      if (prevExpanded && prevExpanded !== targetCard) {
+        prevExpanded.classList.remove('is-expanded');
+        prevExpanded.querySelector('.mobile-guest-row-header')?.setAttribute('aria-expanded', 'false');
+      }
+
+      targetCard.classList.add('is-expanded');
+      targetCard.querySelector('.mobile-guest-row-header')?.setAttribute('aria-expanded', 'true');
+      state.expandedGuestIndex = index;
+
+      // Smart Viewport Anchor: compensate if previous card collapsed above
+      requestAnimationFrame(() => {
+        const newTop = targetCard.getBoundingClientRect().top;
+        const delta = newTop - initialTop;
+        if (Math.abs(delta) > 1) {
+          window.scrollBy({ top: delta, behavior: 'instant' });
+        }
+
+        // Ensure newly revealed action buttons are visible within viewport
+        setTimeout(() => {
+          const rect = targetCard.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const navOffset = 64;
+          const bottomMargin = 16;
+
+          if (rect.bottom > viewportHeight - bottomMargin) {
+            const neededScroll = rect.bottom - (viewportHeight - bottomMargin);
+            const maxScroll = Math.max(0, rect.top - navOffset);
+            const scrollByAmount = Math.min(neededScroll, maxScroll);
+            if (scrollByAmount > 2) {
+              window.scrollBy({ top: scrollByAmount, behavior: 'smooth' });
+            }
+          }
+        }, 150);
+      });
+    }
   }
 
   function filterRows() {

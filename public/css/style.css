@@ -35,10 +35,45 @@
   --danger-border: #FCA5A5;
   --danger-text: #DC2626;
 
-  /* Typography */
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Outfit', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* ========================================================================
+     Typography System (Material 3 & Apple HIG Responsive Hierarchy)
+     ======================================================================== */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Font Weights */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Line Heights */
+  --lh-tight: 1.25;
+  --lh-snug: 1.375;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.625;
+
+  /* Type Scale Tokens */
+  --type-display: 1.375rem;    /* 22px - App title / page hero */
+  --type-h2: 1.125rem;         /* 18px - Section headers / card titles */
+  --type-h3: 1rem;             /* 16px - Subsection / subheadings */
+  --type-body-lg: 0.9375rem;   /* 15px - Primary item / Guest name on mobile */
+  --type-body: 0.875rem;       /* 14px - Standard body text, table cells, desktop inputs */
+  --type-body-sm: 0.8125rem;   /* 13px - Secondary info, compact controls */
+  --type-caption: 0.75rem;     /* 12px - Metadata, timestamps, helper text */
+  --type-badge: 0.6875rem;     /* 11px - Micro status badges, index chips */
+
+  /* Spacing Scale */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 6px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 28px;
+  --space-3xl: 36px;
 
   /* Spacings & Radius */
   --radius-sm: 6px;
@@ -491,6 +526,8 @@ textarea#templateInput {
   padding: 8px 12px;
   background: var(--slate-50);
   border-top: 1px solid var(--slate-200);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .char-count {
@@ -1692,36 +1729,35 @@ textarea#templateInput {
 }
 
 /* ==========================================================================
-   Mobile-First Guest Cards Accordion Layout (Points 2 & 3)
+   Mobile-First Guest Cards Accordion Layout (Two-Line Header + Smooth Transition)
    ========================================================================== */
 .mobile-cards-list {
   display: none;
 }
 
 .mobile-guest-card {
-  background: var(--surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mobile-guest-card:hover {
-  border-color: #CBD5E1;
+  border-color: var(--slate-300);
 }
 
 .mobile-guest-card.card-sent {
-  border-left: 3px solid #22C55E;
+  border-left: 3.5px solid #16A34A;
 }
 
 .mobile-guest-card.is-expanded {
   border-color: #93C5FD;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
-  background: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
 }
 
-/* Collapsed Single-Row Header */
+/* Two-Line Mobile Row Header */
 .mobile-guest-row-header {
   display: flex;
   align-items: center;
@@ -1730,72 +1766,104 @@ textarea#templateInput {
   cursor: pointer;
   user-select: none;
   background: transparent;
-  transition: background 0.15s ease;
-  min-height: 46px;
+  gap: 10px;
+  min-height: 52px;
+  transition: background-color 0.15s ease;
 }
 
 .mobile-guest-row-header:active {
-  background: rgba(0, 0, 0, 0.02);
+  background-color: var(--slate-50);
 }
 
-.mobile-guest-summary-left {
+.mobile-guest-header-main {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
   flex: 1;
 }
 
+.mobile-guest-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+
 .mobile-guest-num {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--primary);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  color: var(--primary-blue);
   background: #EFF6FF;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
   flex-shrink: 0;
+  line-height: 1.3;
 }
 
 .mobile-guest-name {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--slate-800);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: var(--type-body-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--slate-900);
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.mobile-guest-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-left: 2px;
 }
 
 .mobile-pax-badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #2563EB;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  color: #1D4ED8;
   background: #DBEAFE;
-  padding: 2px 6px;
-  border-radius: 9999px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
-  flex-shrink: 0;
+  line-height: 1.2;
 }
 
-.mobile-guest-summary-right {
+.mobile-category-badge {
+  font-size: var(--type-badge);
+  font-weight: var(--fw-medium);
+  color: var(--slate-600);
+  background: var(--slate-100);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.mobile-guest-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  margin-left: 8px;
 }
 
 .mobile-status-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
+  min-height: 28px;
 }
 
 .mobile-status-pill.status-pending {
@@ -1814,20 +1882,22 @@ textarea#templateInput {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94A3B8;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+  color: var(--slate-400);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+  width: 20px;
+  height: 20px;
 }
 
 .mobile-guest-card.is-expanded .mobile-chevron-wrap {
   transform: rotate(180deg);
-  color: var(--primary);
+  color: var(--primary-blue);
 }
 
-/* Expandable Drawer (CSS Grid transition 0fr -> 1fr) */
+/* Smooth Accordion Drawer */
 .mobile-guest-drawer {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-rows 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mobile-guest-card.is-expanded .mobile-guest-drawer {
@@ -1836,33 +1906,41 @@ textarea#templateInput {
 
 .mobile-drawer-inner {
   overflow: hidden;
+  min-height: 0;
   padding: 0 12px;
-  transition: padding 0.25s ease;
+  opacity: 0;
+  transition: opacity 0.2s ease, padding 0.22s ease;
 }
 
 .mobile-guest-card.is-expanded .mobile-drawer-inner {
-  padding: 6px 12px 12px;
-  border-top: 1px dashed #E2E8F0;
+  padding: 8px 12px 12px;
+  border-top: 1px dashed var(--slate-200);
+  opacity: 1;
 }
 
 .mobile-drawer-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.78rem;
-  color: #475569;
+  gap: 5px;
+  font-size: var(--type-body-sm);
+  color: var(--slate-600);
   margin-bottom: 10px;
 }
 
+.mobile-meta-item {
+  word-break: break-word;
+  line-height: var(--lh-normal);
+}
+
 .mobile-meta-item strong {
-  color: #1E293B;
-  font-weight: 600;
+  color: var(--slate-800);
+  font-weight: var(--fw-semibold);
 }
 
 .mobile-meta-link {
-  color: #2563EB;
-  text-decoration: underline;
+  color: var(--primary-blue);
   word-break: break-all;
+  text-decoration: underline;
 }
 
 .mobile-drawer-actions {
@@ -1874,9 +1952,9 @@ textarea#templateInput {
 .mobile-drawer-actions .btn {
   width: 100%;
   justify-content: center;
+  font-size: var(--type-body-sm);
   padding: 8px 12px;
-  font-size: 0.8rem;
-  border-radius: 9999px;
+  min-height: 40px;
 }
 
 /* Mobile Config Toggle Bar (Hidden on desktop) */
@@ -2037,6 +2115,37 @@ textarea#templateInput {
   /* Hide fluffy subtitles on mobile to eliminate giant empty blocks */
   .card-subtitle {
     display: none !important;
+  }
+
+  /* Preview Header on Mobile: stack title and picker cleanly */
+  .preview-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .preview-title {
+    font-size: var(--type-body-sm);
+    color: var(--slate-700);
+  }
+
+  .preview-picker {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .preview-picker label {
+    font-size: var(--type-caption);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .preview-picker select {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--type-body-sm);
+    padding: 6px 8px;
   }
 
   .header-actions {
