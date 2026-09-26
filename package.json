@@ -2,7 +2,6 @@
   "name": "guesty-listy",
   "version": "1.0.0",
   "description": "WhatsApp wa.me message & link generator from Excel template for wedding invitations",
-  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
