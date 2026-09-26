@@ -225,7 +225,7 @@
 
   function parseWhatsAppFormatting(text) {
     if (!text) return '';
-    const clean = decodeHtmlEntities(text);
+    const clean = decodeHtmlEntities(text.trim());
     let escaped = escapeHtml(clean);
 
     // Monospace ```code```
@@ -244,9 +244,12 @@
     const urlRegex = /(https?:\/\/[^\s<]+)/g;
     escaped = escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="wa-link">$1</a>');
 
+    // Clean up excessive newlines (max 2 consecutive line breaks)
+    escaped = escaped.replace(/(\r?\n){3,}/g, '\n\n');
+
     // Convert newlines to <br>
-    escaped = escaped.replace(/\n/g, '<br>');
-    return escaped;
+    escaped = escaped.replace(/\r?\n/g, '<br>');
+    return escaped.trim();
   }
 
   // ===========================================================================
@@ -640,13 +643,7 @@
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    dom.livePreviewBubble.innerHTML = `
-      <div class="wa-msg-text">${formattedHtml || '<em>(Pesan kosong)</em>'}</div>
-      <div class="wa-meta-time">
-        <span>${timeStr}</span>
-        <span class="wa-ticks">✓✓</span>
-      </div>
-    `;
+    dom.livePreviewBubble.innerHTML = `<div class="wa-msg-text">${formattedHtml || '<em>(Pesan kosong)</em>'}</div><div class="wa-meta-time"><span>${timeStr}</span><span class="wa-ticks">✓✓</span></div>`;
   }
 
   function updateCharCounter() {
@@ -973,13 +970,7 @@
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    dom.modalMessageContent.innerHTML = `
-      <div class="wa-msg-text">${formattedHtml}</div>
-      <div class="wa-meta-time">
-        <span>${timeStr}</span>
-        <span class="wa-ticks">✓✓</span>
-      </div>
-    `;
+    dom.modalMessageContent.innerHTML = `<div class="wa-msg-text">${formattedHtml}</div><div class="wa-meta-time"><span>${timeStr}</span><span class="wa-ticks">✓✓</span></div>`;
 
     dom.modalWaLinkInput.value = waUrl || '(Nomor WA tidak tersedia)';
     dom.btnModalCopyLink.disabled = !phoneInfo.isValid;
