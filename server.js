@@ -57,20 +57,7 @@ function handleApi(handler, req, res) {
     return this;
   };
 
-  let body = '';
-  req.on('data', chunk => {
-    body += chunk;
-  });
-  req.on('end', () => {
-    if (body) {
-      try {
-        req.body = JSON.parse(body);
-      } catch (e) {
-        req.body = body;
-      }
-    } else {
-      req.body = {};
-    }
+  const execute = () => {
     try {
       const result = handler(req, res);
       if (result && typeof result.catch === 'function') {
@@ -87,6 +74,28 @@ function handleApi(handler, req, res) {
         res.status(500).json({ error: err.message || 'Internal Server Error' });
       }
     }
+  };
+
+  if (req.body !== undefined) {
+    execute();
+    return;
+  }
+
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk;
+  });
+  req.on('end', () => {
+    if (body) {
+      try {
+        req.body = JSON.parse(body);
+      } catch (e) {
+        req.body = body;
+      }
+    } else {
+      req.body = {};
+    }
+    execute();
   });
 }
 
