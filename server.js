@@ -41,7 +41,8 @@ const apiRoutes = {
   '/api/guests': require('./api/guests'),
   '/api/sent-status': require('./api/sent-status'),
   '/api/templates': require('./api/templates'),
-  '/api/default-excel': require('./api/default-excel')
+  '/api/default-excel': require('./api/default-excel'),
+  '/api/link-preview': require('./api/link-preview')
 };
 
 function handleApi(handler, req, res) {

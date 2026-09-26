@@ -60,9 +60,14 @@
     progressPercentage: document.getElementById('progressPercentage'),
     progressBarFill: document.getElementById('progressBarFill'),
     statTotalGuests: document.getElementById('statTotalGuests'),
+    statTotalPax: document.getElementById('statTotalPax'),
     statSentCount: document.getElementById('statSentCount'),
+    statSentPax: document.getElementById('statSentPax'),
     statPendingCount: document.getElementById('statPendingCount'),
+    statPendingPax: document.getElementById('statPendingPax'),
     statWithPhone: document.getElementById('statWithPhone'),
+    statWithPhonePax: document.getElementById('statWithPhonePax'),
+    mobileCardsList: document.getElementById('mobileCardsList'),
     toastContainer: document.getElementById('toastContainer'),
     previewModal: document.getElementById('previewModal'),
     btnCloseModal: document.getElementById('btnCloseModal'),
@@ -73,6 +78,13 @@
     btnModalCopyLink: document.getElementById('btnModalCopyLink'),
     btnModalCopyText: document.getElementById('btnModalCopyText'),
     btnModalSendWa: document.getElementById('btnModalSendWa'),
+    // Custom Confirmation Modal
+    customConfirmModal: document.getElementById('customConfirmModal'),
+    confirmModalIconWrap: document.getElementById('confirmModalIconWrap'),
+    confirmModalTitle: document.getElementById('confirmModalTitle'),
+    confirmModalMessage: document.getElementById('confirmModalMessage'),
+    btnCancelConfirm: document.getElementById('btnCancelConfirm'),
+    btnProceedConfirm: document.getElementById('btnProceedConfirm'),
     // PIN Gate
     pinOverlay: document.getElementById('pinOverlay'),
     pinInput: document.getElementById('pinInput'),
@@ -150,6 +162,120 @@
     dom.pinInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleUnlock();
     });
+  }
+
+  // ===========================================================================
+  // Custom Confirmation Dialog (Point 1)
+  // ===========================================================================
+  let pendingConfirmAction = null;
+
+  function showCustomConfirm({
+    title = 'Konfirmasi Tindakan',
+    message = 'Apakah Anda yakin ingin melanjutkan tindakan ini?',
+    icon = 'alert-triangle',
+    theme = 'danger',
+    confirmText = 'Ya, Lanjutkan',
+    cancelText = 'Batal',
+    onConfirm
+  }) {
+    if (!dom.customConfirmModal) {
+      if (confirm(message)) onConfirm();
+      return;
+    }
+
+    dom.confirmModalTitle.textContent = title;
+    dom.confirmModalMessage.textContent = message;
+    dom.btnProceedConfirm.textContent = confirmText;
+    dom.btnCancelConfirm.textContent = cancelText;
+
+    dom.confirmModalIconWrap.className = `confirm-modal-icon-wrap ${theme}-theme`;
+    dom.btnProceedConfirm.className = `btn btn-${theme === 'info' ? 'primary' : 'danger'}`;
+
+    const iconEl = document.getElementById('confirmModalIcon');
+    if (iconEl) iconEl.setAttribute('data-lucide', icon);
+    setupLucideIcons();
+
+    pendingConfirmAction = onConfirm;
+    dom.customConfirmModal.style.display = 'flex';
+  }
+
+  function closeConfirmModal() {
+    if (dom.customConfirmModal) dom.customConfirmModal.style.display = 'none';
+    pendingConfirmAction = null;
+  }
+
+  // ===========================================================================
+  // WhatsApp Formatting & URL Preview Helpers (Point 5 & 6)
+  // ===========================================================================
+  function parseWhatsAppFormatting(text) {
+    if (!text) return '';
+    let escaped = escapeHtml(text);
+
+    // Monospace ```code```
+    escaped = escaped.replace(/```([\s\S]+?)```/g, '<code>$1</code>');
+    // Bold *bold*
+    escaped = escaped.replace(/(^|[\s_~])\*([^\s*][^*]*?[^\s*]|[^\s*])\*(?=[\s_~]|$)/g, '$1<strong>$2</strong>');
+    // Italic _italic_
+    escaped = escaped.replace(/(^|[\s*~])_([^\s_][^_]*?[^\s_]|[^\s_])_(?=[\s*~]|$)/g, '$1<em>$2</em>');
+    // Strikethrough ~strike~
+    escaped = escaped.replace(/(^|[\s*_])~([^\s~][^~]*?[^\s~]|[^\s~])~(?=[\s*_]|$)/g, '$1<del>$2</del>');
+
+    // Auto-link URLs
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    escaped = escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="wa-link">$1</a>');
+
+    // Convert newlines to <br>
+    escaped = escaped.replace(/\n/g, '<br>');
+    return escaped;
+  }
+
+  function extractFirstUrl(text) {
+    if (!text) return null;
+    const match = text.match(/(https?:\/\/[^\s]+)/);
+    return match ? match[1] : null;
+  }
+
+  async function renderUrlPreview(url, container) {
+    if (!url || !container) return;
+    let hostname = '';
+    try {
+      hostname = new URL(url).hostname;
+    } catch {
+      hostname = url;
+    }
+
+    container.innerHTML = `
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="wa-og-card">
+        <div class="wa-og-body">
+          <div class="wa-og-domain">${escapeHtml(hostname)}</div>
+          <div class="wa-og-title">Memuat pratinjau tautan...</div>
+        </div>
+      </a>
+    `;
+
+    try {
+      const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+      if (!res.ok) return;
+      const meta = await res.json();
+      if (!meta) return;
+
+      container.innerHTML = `
+        <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="wa-og-card">
+          ${meta.image ? `
+            <div class="wa-og-img-wrap">
+              <img src="${escapeHtml(meta.image)}" alt="${escapeHtml(meta.title || '')}" class="wa-og-img" onerror="this.parentElement.style.display='none'">
+            </div>
+          ` : ''}
+          <div class="wa-og-body">
+            <div class="wa-og-domain">${escapeHtml(meta.siteName || hostname)}</div>
+            <div class="wa-og-title">${escapeHtml(meta.title || url)}</div>
+            ${meta.description ? `<div class="wa-og-desc">${escapeHtml(meta.description)}</div>` : ''}
+          </div>
+        </a>
+      `;
+    } catch (e) {
+      console.warn('Link preview fetch failed:', e);
+    }
   }
 
   // ===========================================================================
@@ -522,25 +648,24 @@
   function renderTable() {
     const tbody = dom.recipientsTableBody;
     tbody.innerHTML = '';
+    if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
+
     if (state.rawRows.length === 0) {
       dom.emptyState.style.display = 'block';
-      dom.showingCountText.textContent = 'Menampilkan 0 tamu';
+      dom.showingCountText.textContent = 'Menampilkan 0 undangan';
       return;
     }
     const filtered = filterRows();
     if (filtered.length === 0) {
       dom.emptyState.style.display = 'block';
-      dom.showingCountText.textContent = '0 tamu ditemukan dari filter';
+      dom.showingCountText.textContent = '0 undangan ditemukan dari filter';
       return;
     }
     dom.emptyState.style.display = 'none';
-    dom.showingCountText.textContent = `Menampilkan ${filtered.length} dari ${state.rawRows.length} tamu undangan`;
+    dom.showingCountText.textContent = `Menampilkan ${filtered.length} dari ${state.rawRows.length} undangan`;
 
     filtered.forEach(({ row, originalIndex }) => {
-      const tr = document.createElement('tr');
       const isSent = isRowSent(row, originalIndex);
-      if (isSent) tr.classList.add('row-is-sent');
-
       const phoneInfo = normalizePhone(row[state.phoneColumn]);
       const compiledMsg = compileMessage(state.currentTemplate, row);
       const waUrl = phoneInfo.isValid ? generateWaUrl(phoneInfo.formatted, compiledMsg) : '';
@@ -548,13 +673,16 @@
       const sapaan = (row['Sapaan'] || '').trim();
       const label = (row['Label'] || '').trim();
       const link = (row['Link'] || '').trim();
+      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
 
-      // No. cell
+      // 1. Desktop Table Row
+      const tr = document.createElement('tr');
+      if (isSent) tr.classList.add('row-is-sent');
+
       const tdNo = document.createElement('td');
       tdNo.className = 'col-num';
       tdNo.textContent = originalIndex + 1;
 
-      // Status badge
       const tdStatus = document.createElement('td');
       tdStatus.className = 'col-status';
       const btnStatus = document.createElement('button');
@@ -572,29 +700,26 @@
       });
       tdStatus.appendChild(btnStatus);
 
-      // Name cell
       const tdName = document.createElement('td');
       tdName.className = 'col-name';
       let chips = '';
       if (sapaan) chips += `<span class="meta-chip">${escapeHtml(sapaan)}</span>`;
-      if (label) chips += `<span class="meta-chip meta-chip-blue">${escapeHtml(label)}</span>`;
-      tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div>${chips ? `<div class="guest-meta-tags">${chips}</div>` : ''}</div>`;
+      chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
+      if (label) chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
+      tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div><div class="guest-meta-tags">${chips}</div></div>`;
 
-      // Phone cell
       const tdPhone = document.createElement('td');
       tdPhone.className = 'col-phone phone-cell-text';
       tdPhone.innerHTML = phoneInfo.isValid
         ? `<span class="phone-valid"><i data-lucide="check" style="width:14px;height:14px;"></i> +${escapeHtml(phoneInfo.formatted)}</span>`
         : `<span class="phone-empty"><i data-lucide="phone-off" style="width:12px;height:12px;"></i> Tanpa Nomor</span>`;
 
-      // Link cell
       const tdLink = document.createElement('td');
       tdLink.className = 'col-link';
       tdLink.innerHTML = (link && link.startsWith('http'))
         ? `<a href="${escapeHtml(link)}" target="_blank" class="link-url-text" title="${escapeHtml(link)}">${escapeHtml(link)}</a>`
         : `<span style="color:var(--slate-400);">-</span>`;
 
-      // Actions
       const tdActions = document.createElement('td');
       tdActions.className = 'col-actions';
       const actionsWrapper = document.createElement('div');
@@ -651,6 +776,76 @@
       tr.appendChild(tdLink);
       tr.appendChild(tdActions);
       tbody.appendChild(tr);
+
+      // 2. Native Mobile Touch Card
+      if (dom.mobileCardsList) {
+        const card = document.createElement('div');
+        card.className = `mobile-guest-card ${isSent ? 'card-sent' : ''}`;
+
+        card.innerHTML = `
+          <div class="mobile-guest-header">
+            <div class="mobile-guest-main">
+              <div class="mobile-guest-num-row">
+                <span class="mobile-guest-num">#${originalIndex + 1}</span>
+                ${sapaan ? `<span class="mobile-guest-sapaan">${escapeHtml(sapaan)}</span>` : ''}
+              </div>
+              <div class="mobile-guest-name">${escapeHtml(guestName)}</div>
+              <div class="mobile-guest-badges">
+                <span class="mobile-pax-badge">👥 ${pax} Tamu</span>
+                ${label ? `<span class="mobile-category-chip">${escapeHtml(label)}</span>` : ''}
+              </div>
+            </div>
+            <button type="button" class="mobile-status-toggle ${isSent ? 'status-sent' : 'status-pending'}">
+              <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:13px;height:13px;"></i>
+              ${isSent ? 'Terkirim' : 'Belum Kirim'}
+            </button>
+          </div>
+
+          <div class="mobile-guest-contact">
+            <span class="mobile-contact-pill ${phoneInfo.isValid ? 'has-phone' : ''}">
+              <i data-lucide="${phoneInfo.isValid ? 'check' : 'phone-off'}" style="width:13px;height:13px;"></i>
+              ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : 'Tanpa WhatsApp'}
+            </span>
+            ${(link && link.startsWith('http')) ? `
+              <a href="${escapeHtml(link)}" target="_blank" class="mobile-link-chip" title="${escapeHtml(link)}">
+                <i data-lucide="external-link" style="width:12px;height:12px;"></i> Undangan
+              </a>
+            ` : ''}
+          </div>
+
+          <div class="mobile-card-actions">
+            <button type="button" class="btn btn-outline btn-mobile-preview">
+              <i data-lucide="eye"></i> Preview
+            </button>
+            <button type="button" class="btn btn-primary btn-mobile-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}">
+              <i data-lucide="send"></i> Buka WA
+            </button>
+          </div>
+        `;
+
+        const btnMobStatus = card.querySelector('.mobile-status-toggle');
+        btnMobStatus.addEventListener('click', async () => {
+          const next = !isRowSent(row, originalIndex);
+          await setRowSent(row, originalIndex, next);
+          renderTable();
+          showToast(next ? `${guestName} ditandai Sudah Dikirim!` : `${guestName} ditandai Belum Dikirim.`, 'success');
+        });
+
+        const btnMobPreview = card.querySelector('.btn-mobile-preview');
+        btnMobPreview.addEventListener('click', () => openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo));
+
+        const btnMobSend = card.querySelector('.btn-mobile-send');
+        if (phoneInfo.isValid) {
+          btnMobSend.addEventListener('click', async () => {
+            window.open(waUrl, '_blank');
+            await setRowSent(row, originalIndex, true);
+            renderTable();
+            showToast(`Membuka WhatsApp untuk ${guestName}...`, 'success');
+          });
+        }
+
+        dom.mobileCardsList.appendChild(card);
+      }
     });
 
     setupLucideIcons();
@@ -677,18 +872,42 @@
   function updateStatsAndProgress() {
     const total = state.rawRows.length;
     let withPhone = 0, sentCount = 0;
+    let totalPax = 0, sentPax = 0, withPhonePax = 0;
+
     state.rawRows.forEach((row, idx) => {
-      if (normalizePhone(row[state.phoneColumn]).isValid) withPhone++;
-      if (isRowSent(row, idx)) sentCount++;
+      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+      totalPax += pax;
+
+      const hasPhone = normalizePhone(row[state.phoneColumn]).isValid;
+      if (hasPhone) {
+        withPhone++;
+        withPhonePax += pax;
+      }
+      if (isRowSent(row, idx)) {
+        sentCount++;
+        sentPax += pax;
+      }
     });
+
     const pendingCount = total - sentCount;
+    const pendingPax = totalPax - sentPax;
     const percentage = total > 0 ? Math.round((sentCount / total) * 100) : 0;
+
     dom.statTotalGuests.textContent = total;
+    if (dom.statTotalPax) dom.statTotalPax.textContent = `👥 ${totalPax} Tamu`;
+
     dom.statSentCount.textContent = `${sentCount} (${percentage}%)`;
+    if (dom.statSentPax) dom.statSentPax.textContent = `👥 ${sentPax} Tamu`;
+
     dom.statPendingCount.textContent = pendingCount;
+    if (dom.statPendingPax) dom.statPendingPax.textContent = `👥 ${pendingPax} Tamu`;
+
     dom.statWithPhone.textContent = withPhone;
-    dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} Terkirim)`;
+    if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${withPhonePax} Tamu`;
+
+    dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} Undangan · ${sentPax}/${totalPax} Tamu)`;
     dom.progressBarFill.style.width = `${percentage}%`;
+
     document.getElementById('countFilterAll').textContent = total;
     document.getElementById('countFilterPending').textContent = pendingCount;
     document.getElementById('countFilterSent').textContent = sentCount;
@@ -703,12 +922,33 @@
     const name = (row['Nama'] || row['Name'] || '-').trim();
     const sapaan = (row['Sapaan'] || '').trim();
     const isSent = isRowSent(row, index);
+    const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+
     dom.modalGuestTitle.textContent = `Pesan Undangan: ${sapaan} ${name}`;
     dom.modalGuestInfo.innerHTML = `
-      <span class="meta-chip">Tamu #${index + 1}</span>
+      <span class="meta-chip">Undangan #${index + 1}</span>
+      <span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>
       <span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>
       <span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? 'Sudah Dikirim' : 'Belum Dikirim'}</span>`;
-    dom.modalMessageContent.textContent = compiledMsg;
+
+    const formattedHtml = parseWhatsAppFormatting(compiledMsg);
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    dom.modalMessageContent.innerHTML = `
+      <div class="wa-msg-text">${formattedHtml}</div>
+      <div id="modalUrlPreviewWrap"></div>
+      <div class="wa-meta-time">
+        <span>${timeStr}</span>
+        <span class="wa-ticks">✓✓</span>
+      </div>
+    `;
+
+    const firstUrl = extractFirstUrl(compiledMsg);
+    if (firstUrl) {
+      renderUrlPreview(firstUrl, document.getElementById('modalUrlPreviewWrap'));
+    }
+
     dom.modalWaLinkInput.value = waUrl || '(Nomor WA tidak tersedia)';
     dom.btnModalCopyLink.disabled = !phoneInfo.isValid;
     dom.btnModalSendWa.disabled = !phoneInfo.isValid;
@@ -781,7 +1021,29 @@
   // Event Listeners
   // ===========================================================================
   function setupEventListeners() {
-    dom.fileInput.addEventListener('change', (e) => { if (e.target.files[0]) processExcelFile(e.target.files[0]); });
+    const handleFileUpload = (file) => {
+      if (!file) return;
+      if (state.rawRows.length > 0) {
+        showCustomConfirm({
+          title: 'Ganti Data Tamu Excel?',
+          message: `Mengunggah "${file.name}" akan menggantikan daftar tamu saat ini (${state.rawRows.length} undangan). Lanjutkan?`,
+          icon: 'file-spreadsheet',
+          theme: 'info',
+          confirmText: 'Ya, Ganti Data',
+          cancelText: 'Batal',
+          onConfirm: () => processExcelFile(file)
+        });
+      } else {
+        processExcelFile(file);
+      }
+    };
+
+    dom.fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        handleFileUpload(e.target.files[0]);
+        dom.fileInput.value = '';
+      }
+    });
 
     ['dragenter', 'dragover'].forEach(ev => {
       dom.dropzone.addEventListener(ev, (e) => { e.preventDefault(); dom.dropzone.classList.add('dragover'); });
@@ -789,9 +1051,25 @@
     ['dragleave', 'drop'].forEach(ev => {
       dom.dropzone.addEventListener(ev, (e) => { e.preventDefault(); dom.dropzone.classList.remove('dragover'); });
     });
-    dom.dropzone.addEventListener('drop', (e) => { if (e.dataTransfer.files[0]) processExcelFile(e.dataTransfer.files[0]); });
+    dom.dropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]);
+    });
 
-    dom.btnReloadDefault.addEventListener('click', loadDefaultExcel);
+    dom.btnReloadDefault.addEventListener('click', () => {
+      if (state.rawRows.length > 0) {
+        showCustomConfirm({
+          title: 'Muat Ulang Template Excel Bawaan?',
+          message: 'Data tamu saat ini akan digantikan dengan data Excel bawaan.',
+          icon: 'refresh-cw',
+          theme: 'info',
+          confirmText: 'Ya, Muat Ulang',
+          cancelText: 'Batal',
+          onConfirm: () => loadDefaultExcel()
+        });
+      } else {
+        loadDefaultExcel();
+      }
+    });
 
     dom.phoneColSelect.addEventListener('change', (e) => {
       state.phoneColumn = e.target.value;
@@ -829,13 +1107,23 @@
     });
 
     dom.btnResetTemplate.addEventListener('click', () => {
-      state.currentTemplate = PRESET_TEMPLATES.formal;
-      dom.templatePresetSelect.value = 'formal';
-      dom.templateInput.value = state.currentTemplate;
-      updateCharCounter();
-      updateLivePreview();
-      renderTable();
-      showToast('Template dikembalikan ke format Formal.', 'success');
+      showCustomConfirm({
+        title: 'Reset Template Pesan?',
+        message: 'Template saat ini akan dikembalikan ke format bawaan (Formal). Perubahan kustom yang belum disimpan akan hilang.',
+        icon: 'rotate-ccw',
+        theme: 'danger',
+        confirmText: 'Ya, Reset Template',
+        cancelText: 'Batal',
+        onConfirm: () => {
+          state.currentTemplate = PRESET_TEMPLATES.formal;
+          dom.templatePresetSelect.value = 'formal';
+          dom.templateInput.value = state.currentTemplate;
+          updateCharCounter();
+          updateLivePreview();
+          renderTable();
+          showToast('Template dikembalikan ke format Formal.', 'success');
+        }
+      });
     });
 
     dom.previewGuestSelect.addEventListener('change', (e) => {
@@ -865,32 +1153,83 @@
       renderTable();
     });
 
-    dom.btnMarkAllSent.addEventListener('click', async () => {
+    dom.btnMarkAllSent.addEventListener('click', () => {
       const filtered = filterRows();
-      if (filtered.length === 0) return;
-      for (const { row, originalIndex } of filtered) {
-        await setRowSent(row, originalIndex, true);
+      if (filtered.length === 0) {
+        showToast('Tidak ada data tamu yang ditampilkan.', 'danger');
+        return;
       }
-      renderTable();
-      showToast(`${filtered.length} tamu ditandai Sudah Dikirim!`, 'success');
+      showCustomConfirm({
+        title: 'Tandai Semua Sudah Dikirim?',
+        message: `Tandai ${filtered.length} tamu yang saat ini tampil di filter sebagai "Sudah Dikirim"?`,
+        icon: 'check-circle-2',
+        theme: 'info',
+        confirmText: `Ya, Tandai (${filtered.length})`,
+        cancelText: 'Batal',
+        onConfirm: async () => {
+          for (const { row, originalIndex } of filtered) {
+            await setRowSent(row, originalIndex, true);
+          }
+          renderTable();
+          showToast(`${filtered.length} tamu ditandai Sudah Dikirim!`, 'success');
+        }
+      });
     });
 
-    dom.btnResetAllSent.addEventListener('click', async () => {
-      if (!confirm('Reset seluruh status pengiriman ke Belum Dikirim?')) return;
-      try {
-        await apiDelete('/api/sent-status');
-      } catch (e) {
-        console.warn('Failed to reset on Supabase', e);
-      }
-      state.sentStatuses = {};
-      renderTable();
-      updateStatsAndProgress();
-      showToast('Semua status pengiriman berhasil di-reset.', 'success');
+    dom.btnResetAllSent.addEventListener('click', () => {
+      showCustomConfirm({
+        title: 'Reset Semua Status Pengiriman?',
+        message: 'Apakah Anda yakin ingin mengembalikan seluruh status tamu menjadi "Belum Dikirim"? Data status yang tersimpan di cloud juga akan dihapus.',
+        icon: 'rotate-ccw',
+        theme: 'danger',
+        confirmText: 'Ya, Reset Semua',
+        cancelText: 'Batal',
+        onConfirm: async () => {
+          try {
+            await apiDelete('/api/sent-status');
+          } catch (e) {
+            console.warn('Failed to reset on Supabase', e);
+          }
+          state.sentStatuses = {};
+          renderTable();
+          updateStatsAndProgress();
+          showToast('Semua status pengiriman berhasil di-reset.', 'success');
+        }
+      });
     });
+
+    // Custom confirm modal listeners
+    if (dom.btnCancelConfirm) {
+      dom.btnCancelConfirm.addEventListener('click', closeConfirmModal);
+    }
+    if (dom.btnProceedConfirm) {
+      dom.btnProceedConfirm.addEventListener('click', () => {
+        if (typeof pendingConfirmAction === 'function') {
+          const action = pendingConfirmAction;
+          closeConfirmModal();
+          action();
+        } else {
+          closeConfirmModal();
+        }
+      });
+    }
+    if (dom.customConfirmModal) {
+      dom.customConfirmModal.addEventListener('click', (e) => {
+        if (e.target === dom.customConfirmModal) closeConfirmModal();
+      });
+    }
 
     dom.btnCloseModal.addEventListener('click', closeModal);
     dom.previewModal.addEventListener('click', (e) => { if (e.target === dom.previewModal) closeModal(); });
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (dom.customConfirmModal && dom.customConfirmModal.style.display === 'flex') {
+          closeConfirmModal();
+        } else {
+          closeModal();
+        }
+      }
+    });
   }
 
   // ===========================================================================

@@ -73,20 +73,24 @@
       <!-- Quick Metrics Summary -->
       <div class="header-metrics" id="headerStats">
         <div class="metric-card">
-          <span class="metric-title">Total Tamu</span>
+          <span class="metric-title">Total Undangan</span>
           <span class="metric-num" id="statTotalGuests">0</span>
+          <span class="metric-sub" id="statTotalPax">👥 0 Tamu</span>
         </div>
         <div class="metric-card metric-success">
           <span class="metric-title">Sudah Dikirim</span>
-          <span class="metric-num" id="statSentCount">0</span>
+          <span class="metric-num" id="statSentCount">0 (0%)</span>
+          <span class="metric-sub" id="statSentPax">👥 0 Tamu</span>
         </div>
         <div class="metric-card metric-warning">
           <span class="metric-title">Belum Dikirim</span>
           <span class="metric-num" id="statPendingCount">0</span>
+          <span class="metric-sub" id="statPendingPax">👥 0 Tamu</span>
         </div>
         <div class="metric-card metric-info">
           <span class="metric-title">Ada WhatsApp</span>
           <span class="metric-num" id="statWithPhone">0</span>
+          <span class="metric-sub" id="statWithPhonePax">👥 0 Tamu</span>
         </div>
         <!-- Realtime sync indicator -->
         <div class="metric-card sync-indicator" id="syncIndicator" title="Status sinkronisasi Realtime">
@@ -276,7 +280,7 @@
 
         <!-- Full-Width Responsive Table -->
         <div class="table-container">
-          <table class="data-table" id="recipientsTable">
+          <table class="data-table desktop-table-view" id="recipientsTable">
             <thead>
               <tr>
                 <th class="col-num">No</th>
@@ -292,6 +296,11 @@
             </tbody>
           </table>
 
+          <!-- Native Mobile Cards View -->
+          <div class="mobile-cards-list" id="mobileCardsList">
+            <!-- Dynamically populated mobile guest cards -->
+          </div>
+
           <!-- Empty State -->
           <div class="empty-state" id="emptyState" style="display: none;">
             <div class="empty-icon-wrap">
@@ -304,9 +313,9 @@
 
         <!-- Table Footer Info -->
         <div class="table-footer-bar">
-          <div class="table-footer-count" id="showingCountText">Menampilkan 0 tamu</div>
+          <div class="table-footer-count" id="showingCountText">Menampilkan 0 undangan</div>
           <div class="table-footer-instructions">
-            <span><i data-lucide="info"></i> Klik badge <strong>Status</strong> pada baris untuk mengubah status antara <em>Sudah Dikirim</em> dan <em>Belum Dikirim</em>.</span>
+            <span><i data-lucide="info"></i> Klik badge <strong>Status</strong> pada baris/kartu untuk mengubah status antara <em>Sudah Dikirim</em> dan <em>Belum Dikirim</em>.</span>
           </div>
         </div>
 
@@ -334,7 +343,16 @@
       </div>
       <div class="modal-content">
         <div class="modal-meta-row" id="modalGuestInfo"></div>
-        <div class="modal-bubble" id="modalMessageContent"></div>
+        
+        <!-- WhatsApp Chat View Wrapper -->
+        <div class="wa-preview-wrapper">
+          <div class="wa-chat-bubble-container">
+            <div class="wa-modal-bubble" id="modalMessageContent">
+              <!-- Formatted text and URL preview will be injected here -->
+            </div>
+          </div>
+        </div>
+
         <div class="modal-input-group">
           <label>Link wa.me:</label>
           <div class="input-with-button">
@@ -346,6 +364,21 @@
       <div class="modal-bottom">
         <button id="btnModalCopyText" class="btn btn-outline"><i data-lucide="copy"></i> Salin Teks Pesan</button>
         <button id="btnModalSendWa" class="btn btn-primary"><i data-lucide="send"></i> Buka di WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom In-App Confirmation Modal -->
+  <div class="confirm-modal-overlay" id="customConfirmModal" style="display: none;">
+    <div class="confirm-modal-box">
+      <div class="confirm-modal-icon-wrap" id="confirmModalIconWrap">
+        <i data-lucide="alert-triangle" id="confirmModalIcon"></i>
+      </div>
+      <h3 class="confirm-modal-title" id="confirmModalTitle">Konfirmasi Tindakan</h3>
+      <p class="confirm-modal-message" id="confirmModalMessage">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+      <div class="confirm-modal-actions">
+        <button id="btnCancelConfirm" class="btn btn-outline">Batal</button>
+        <button id="btnProceedConfirm" class="btn btn-danger">Ya, Lanjutkan</button>
       </div>
     </div>
   </div>
