@@ -99,7 +99,7 @@ function handleApi(handler, req, res) {
   });
 }
 
-const server = http.createServer((req, res) => {
+function appHandler(req, res) {
   // Normalize URL
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = decodeURIComponent(parsedUrl.pathname);
@@ -150,23 +150,27 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': contentType });
     fs.createReadStream(filePath).pipe(res);
   });
-});
+}
 
-server.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(` ✨ Viding WA Template Generator running on:`);
-  console.log(` 👉 http://localhost:${PORT}`);
-  console.log(`====================================================`);
-});
+const server = http.createServer(appHandler);
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    const fallbackPort = Number(PORT) + 1;
-    console.log(`Port ${PORT} is busy, retrying on port ${fallbackPort}...`);
-    server.listen(fallbackPort);
-  } else {
-    console.error('Server error:', err);
-  }
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(` ✨ Viding WA Template Generator running on:`);
+    console.log(` 👉 http://localhost:${PORT}`);
+    console.log(`====================================================`);
+  });
 
-module.exports = server;
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      const fallbackPort = Number(PORT) + 1;
+      console.log(`Port ${PORT} is busy, retrying on port ${fallbackPort}...`);
+      server.listen(fallbackPort);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+}
+
+module.exports = appHandler;
