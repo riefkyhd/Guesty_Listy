@@ -1278,12 +1278,19 @@ textarea#templateInput {
 }
 
 /* ==========================================================================
-   Subtle Slate Neutral Shimmer Animation (Continuous Flowing Highlight)
+   Subtle Ambient Shimmer Animation (Continuous Flowing Highlight)
    ========================================================================== */
 .shimmer {
-  background: linear-gradient(90deg, #E2E8F0 0%, #F1F5F9 50%, #E2E8F0 100%);
+  background: linear-gradient(
+    90deg, 
+    #E2E8F0 0%, 
+    #E2E8F0 25%, 
+    #F1F5F9 50%, 
+    #E2E8F0 75%, 
+    #E2E8F0 100%
+  );
   background-size: 200% 100%;
-  animation: shimmerFlow 1.6s ease-in-out infinite;
+  animation: shimmerFlow 2.4s ease-in-out infinite;
   border-radius: var(--radius-sm);
   display: inline-block;
   vertical-align: middle;
@@ -1295,6 +1302,15 @@ textarea#templateInput {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none !important;
+    background-position: 0 0 !important;
+    opacity: 0.9;
   }
 }
 
@@ -1323,20 +1339,66 @@ textarea#templateInput {
   border-radius: 50%;
 }
 
-/* Skeleton: Header Metrics */
+/* Semantic Tinting for Header Metrics */
+.metric-card {
+  --skel-base: #E2E8F0;
+  --skel-highlight: #F1F5F9;
+}
+
+.metric-card.metric-success {
+  --skel-base: #DCFCE7;
+  --skel-highlight: #F0FDF4;
+}
+
+.metric-card.metric-warning {
+  --skel-base: #FEF3C7;
+  --skel-highlight: #FFFBEB;
+}
+
+.metric-card.metric-info {
+  --skel-base: #DBEAFE;
+  --skel-highlight: #EFF6FF;
+}
+
+/* Scoped Shimmer for Metric Cards (Subtle Semantic Tint) */
+.metric-card .shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--skel-base) 0%,
+    var(--skel-base) 25%,
+    var(--skel-highlight) 50%,
+    var(--skel-base) 75%,
+    var(--skel-base) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Metric Number Skeleton (Left-aligned, proportional to digits) */
 .metric-skeleton {
-  width: 46px;
-  height: 22px;
-  margin: 2px auto;
+  width: 44px;
+  height: 20px;
+  margin: 2px 0 3px 0;
   border-radius: 6px;
   display: block;
 }
 
+.metric-skeleton.metric-skeleton-wide {
+  width: 68px;
+}
+
+/* Single Pill Sub-Metric Skeleton (No double nesting) */
+.metric-card .metric-sub:has(.metric-sub-skeleton),
+.metric-card .metric-sub.has-skeleton {
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
 .metric-sub-skeleton {
-  width: 38px;
-  height: 13px;
-  margin: 3px auto 1px;
-  border-radius: 4px;
+  width: 62px;
+  height: 18px;
+  margin: 4px 0 1px 0;
+  border-radius: 9999px;
   display: block;
 }
 

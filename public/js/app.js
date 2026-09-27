@@ -128,11 +128,20 @@
     if (isLoading) {
       // 1. Shimmer in Header Metrics
       if (dom.statTotalGuests) dom.statTotalGuests.innerHTML = '<span class="shimmer metric-skeleton"></span>';
-      if (dom.statTotalPax) dom.statTotalPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
-      if (dom.statSentCount) dom.statSentCount.innerHTML = '<span class="shimmer metric-skeleton"></span>';
-      if (dom.statSentPax) dom.statSentPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      if (dom.statTotalPax) {
+        dom.statTotalPax.classList.add('has-skeleton');
+        dom.statTotalPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      }
+      if (dom.statSentCount) dom.statSentCount.innerHTML = '<span class="shimmer metric-skeleton metric-skeleton-wide"></span>';
+      if (dom.statSentPax) {
+        dom.statSentPax.classList.add('has-skeleton');
+        dom.statSentPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      }
       if (dom.statPendingCount) dom.statPendingCount.innerHTML = '<span class="shimmer metric-skeleton"></span>';
-      if (dom.statPendingPax) dom.statPendingPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      if (dom.statPendingPax) {
+        dom.statPendingPax.classList.add('has-skeleton');
+        dom.statPendingPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      }
 
       // 2. Shimmer in Table Toolbar / Counter
       if (dom.showingCountText) {
@@ -1625,13 +1634,22 @@
     const percentage = total > 0 ? Math.round((sentCount / total) * 100) : 0;
 
     dom.statTotalGuests.textContent = total;
-    if (dom.statTotalPax) dom.statTotalPax.textContent = `👥 ${totalPax} Tamu`;
+    if (dom.statTotalPax) {
+      dom.statTotalPax.classList.remove('has-skeleton');
+      dom.statTotalPax.textContent = `👥 ${totalPax} Tamu`;
+    }
 
     dom.statSentCount.textContent = `${sentCount} (${percentage}%)`;
-    if (dom.statSentPax) dom.statSentPax.textContent = `👥 ${sentPax} Tamu`;
+    if (dom.statSentPax) {
+      dom.statSentPax.classList.remove('has-skeleton');
+      dom.statSentPax.textContent = `👥 ${sentPax} Tamu`;
+    }
 
     dom.statPendingCount.textContent = pendingCount;
-    if (dom.statPendingPax) dom.statPendingPax.textContent = `👥 ${pendingPax} Tamu`;
+    if (dom.statPendingPax) {
+      dom.statPendingPax.classList.remove('has-skeleton');
+      dom.statPendingPax.textContent = `👥 ${pendingPax} Tamu`;
+    }
 
     if (dom.statWithPhone) dom.statWithPhone.textContent = withPhone;
     if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${withPhonePax} Tamu`;
@@ -2124,6 +2142,7 @@
         renderTable();
       }
     }
+    window.__setInitialLoading = setInitialLoading;
   }
 
   // ===========================================================================
