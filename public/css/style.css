@@ -655,39 +655,42 @@ textarea#templateInput {
 
 /* Table Toolbar */
 .table-toolbar {
-  padding: 14px 24px;
+  padding: 12px 20px;
   background: var(--slate-50);
   border-bottom: 1px solid var(--slate-200);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .search-wrapper {
   position: relative;
-  min-width: 280px;
-  flex: 1;
+  width: 220px;
+  min-width: 170px;
+  max-width: 250px;
+  flex: 0 0 220px;
 }
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   color: var(--slate-400);
 }
 
 .search-wrapper input {
   width: 100%;
-  padding: 8px 36px;
+  padding: 7px 30px 7px 32px;
   background: #FFFFFF;
   border: 1px solid var(--slate-300);
   border-radius: var(--radius-md);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--slate-900);
   outline: none;
   transition: border-color 0.15s ease;
@@ -700,7 +703,7 @@ textarea#templateInput {
 
 .btn-clear {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
@@ -712,18 +715,19 @@ textarea#templateInput {
 /* Pihak (Side) Filter Tabs */
 .side-filter-group {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 5px;
+  flex-wrap: nowrap;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .side-tab {
   background: #FFFFFF;
   border: 1px solid var(--slate-300);
   color: var(--slate-700);
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: var(--radius-full);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -731,6 +735,7 @@ textarea#templateInput {
   align-items: center;
   gap: 5px;
   user-select: none;
+  white-space: nowrap;
 }
 
 .side-tab:hover {
@@ -772,20 +777,23 @@ textarea#templateInput {
 
 .filter-group {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 5px;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .filter-tab {
   background: #FFFFFF;
   border: 1px solid var(--slate-300);
   color: var(--slate-600);
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: var(--radius-full);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .filter-tab:hover {
@@ -813,7 +821,16 @@ textarea#templateInput {
 
 .bulk-tools {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.bulk-tools .btn {
+  padding: 6px 12px;
+  font-size: 0.78rem;
 }
 
 /* ==========================================================================
