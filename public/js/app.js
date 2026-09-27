@@ -58,7 +58,6 @@
     recipientsTableBody: document.getElementById('recipientsTableBody'),
     recipientsTable: document.getElementById('recipientsTable'),
     emptyState: document.getElementById('emptyState'),
-    initialLoadingState: document.getElementById('initialLoadingState'),
     showingCountText: document.getElementById('showingCountText'),
     progressPercentage: document.getElementById('progressPercentage'),
     progressBarFill: document.getElementById('progressBarFill'),
@@ -102,24 +101,86 @@
   };
 
   function setInitialLoading(isLoading) {
-    if (!dom.initialLoadingState) return;
     if (isLoading) {
-      dom.initialLoadingState.style.display = 'block';
-      if (dom.emptyState) dom.emptyState.style.display = 'none';
-      if (dom.recipientsTable) dom.recipientsTable.style.display = 'none';
-      if (dom.mobileCardsList) dom.mobileCardsList.style.display = 'none';
-      if (dom.showingCountText) dom.showingCountText.textContent = 'Memuat data undangan...';
+      // 1. Shimmer in Header Metrics
+      if (dom.statTotalGuests) dom.statTotalGuests.innerHTML = '<span class="shimmer metric-skeleton"></span>';
+      if (dom.statTotalPax) dom.statTotalPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      if (dom.statSentCount) dom.statSentCount.innerHTML = '<span class="shimmer metric-skeleton"></span>';
+      if (dom.statSentPax) dom.statSentPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+      if (dom.statPendingCount) dom.statPendingCount.innerHTML = '<span class="shimmer metric-skeleton"></span>';
+      if (dom.statPendingPax) dom.statPendingPax.innerHTML = '<span class="shimmer metric-sub-skeleton"></span>';
+
+      // 2. Shimmer in Table Toolbar / Counter
+      if (dom.showingCountText) {
+        dom.showingCountText.innerHTML = '<span class="shimmer" style="width: 150px; height: 14px; border-radius: 4px; display: inline-block;"></span>';
+      }
+
+      // 3. Shimmer in Live Preview Bubble (4 subtle flowing lines)
       if (dom.livePreviewBubble) {
         dom.livePreviewBubble.innerHTML = `
-          <div class="preview-loading">
-            <div class="mini-spinner"></div>
-            <span>Memuat preview pesan...</span>
+          <div class="preview-skeleton-wrap">
+            <span class="shimmer preview-skeleton-line" style="width: 82%;"></span>
+            <span class="shimmer preview-skeleton-line" style="width: 60%;"></span>
+            <span class="shimmer preview-skeleton-line" style="width: 90%;"></span>
+            <span class="shimmer preview-skeleton-line" style="width: 45%;"></span>
+            <div class="preview-skeleton-meta">
+              <span class="shimmer" style="width: 38px; height: 10px; border-radius: 4px;"></span>
+            </div>
           </div>`;
       }
-    } else {
-      dom.initialLoadingState.style.display = 'none';
+
+      // 4. Shimmer in Desktop Table (5 skeleton placeholder rows)
+      if (dom.recipientsTableBody) {
+        dom.recipientsTableBody.innerHTML = Array(5).fill(0).map(() => `
+          <tr class="table-skeleton-row">
+            <td class="col-num"><span class="shimmer skeleton-badge" style="width: 24px;"></span></td>
+            <td class="col-status"><span class="shimmer skeleton-pill" style="width: 92px;"></span></td>
+            <td class="col-name">
+              <div class="skeleton-cell-name">
+                <span class="shimmer skeleton-title" style="width: 130px;"></span>
+                <span class="shimmer skeleton-text" style="width: 70px;"></span>
+              </div>
+            </td>
+            <td class="col-phone"><span class="shimmer skeleton-text" style="width: 110px;"></span></td>
+            <td class="col-link"><span class="shimmer skeleton-text" style="width: 140px;"></span></td>
+            <td class="col-actions">
+              <div class="skeleton-cell-actions">
+                <span class="shimmer skeleton-badge" style="width: 65px; height: 30px; border-radius: 8px;"></span>
+                <span class="shimmer skeleton-badge" style="width: 65px; height: 30px; border-radius: 8px;"></span>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // 5. Shimmer in Mobile Cards (4 skeleton cards)
+      if (dom.mobileCardsList) {
+        dom.mobileCardsList.innerHTML = Array(4).fill(0).map(() => `
+          <div class="mobile-skeleton-card">
+            <div class="mobile-skeleton-header">
+              <div class="mobile-skeleton-left">
+                <span class="shimmer skeleton-title" style="width: 140px;"></span>
+                <span class="shimmer skeleton-text" style="width: 70px;"></span>
+              </div>
+              <div class="mobile-skeleton-right">
+                <span class="shimmer skeleton-pill" style="width: 65px;"></span>
+                <span class="shimmer skeleton-circle" style="width: 16px; height: 16px;"></span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      if (dom.emptyState) dom.emptyState.style.display = 'none';
       if (dom.recipientsTable) dom.recipientsTable.style.display = '';
       if (dom.mobileCardsList) dom.mobileCardsList.style.display = '';
+    } else {
+      if (state.rawRows.length === 0) {
+        if (dom.recipientsTableBody) dom.recipientsTableBody.innerHTML = '';
+        if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
+        if (dom.emptyState) dom.emptyState.style.display = 'block';
+        if (dom.showingCountText) dom.showingCountText.textContent = 'Menampilkan 0 undangan';
+      }
     }
   }
 
@@ -685,12 +746,8 @@
     if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
 
     if (state.rawRows.length === 0) {
-      if (dom.initialLoadingState && dom.initialLoadingState.style.display === 'block') {
-        if (dom.emptyState) dom.emptyState.style.display = 'none';
-      } else {
-        if (dom.emptyState) dom.emptyState.style.display = 'block';
-        dom.showingCountText.textContent = 'Menampilkan 0 undangan';
-      }
+      if (dom.emptyState) dom.emptyState.style.display = 'block';
+      if (dom.showingCountText) dom.showingCountText.textContent = 'Menampilkan 0 undangan';
       return;
     }
     const filtered = filterRows();

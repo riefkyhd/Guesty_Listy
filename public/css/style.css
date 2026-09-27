@@ -1054,66 +1054,135 @@ textarea#templateInput {
   pointer-events: none;
 }
 
-/* Initial Loading State */
-.loading-state {
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--slate-500);
+/* ==========================================================================
+   Subtle Slate Neutral Shimmer Animation (Continuous Flowing Highlight)
+   ========================================================================== */
+.shimmer {
+  background: linear-gradient(90deg, #E2E8F0 0%, #F1F5F9 50%, #E2E8F0 100%);
+  background-size: 200% 100%;
+  animation: shimmerFlow 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  vertical-align: middle;
 }
 
-.loading-spinner-wrap {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-full);
-  background: #EFF6FF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
+@keyframes shimmerFlow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-.loading-spinner {
-  width: 26px;
-  height: 26px;
-  border: 3px solid #DBEAFE;
-  border-top-color: var(--primary-blue);
+/* Skeleton Building Blocks */
+.skeleton-text {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.skeleton-title {
+  height: 15px;
+  border-radius: 6px;
+}
+
+.skeleton-pill {
+  height: 22px;
+  border-radius: 9999px;
+}
+
+.skeleton-badge {
+  height: 18px;
+  border-radius: 6px;
+}
+
+.skeleton-circle {
   border-radius: 50%;
-  animation: spinnerRotate 0.8s linear infinite;
 }
 
-.loading-state h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--slate-800);
-  margin-bottom: 6px;
+/* Skeleton: Header Metrics */
+.metric-skeleton {
+  width: 46px;
+  height: 22px;
+  margin: 2px auto;
+  border-radius: 6px;
+  display: block;
 }
 
-.loading-state p {
-  font-size: 0.84rem;
-  color: var(--slate-500);
+.metric-sub-skeleton {
+  width: 38px;
+  height: 13px;
+  margin: 3px auto 1px;
+  border-radius: 4px;
+  display: block;
 }
 
-.preview-loading {
+/* Skeleton: WhatsApp Preview Bubble */
+.preview-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px;
+}
+
+.preview-skeleton-line {
+  height: 13px;
+  border-radius: 4px;
+}
+
+.preview-skeleton-meta {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+/* Skeleton: Table Rows (Desktop) */
+.table-skeleton-row td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.skeleton-cell-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-cell-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Skeleton: Mobile Cards */
+.mobile-skeleton-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.mobile-skeleton-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  color: var(--slate-600);
-  font-size: 0.84rem;
-  padding: 8px 4px;
 }
 
-.mini-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(22, 163, 74, 0.25);
-  border-top-color: #16A34A;
-  border-radius: 50%;
-  animation: spinnerRotate 0.75s linear infinite;
-  flex-shrink: 0;
+.mobile-skeleton-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
 }
 
-@keyframes spinnerRotate {
-  to { transform: rotate(360deg); }
+.mobile-skeleton-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Empty State */
