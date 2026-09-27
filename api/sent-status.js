@@ -11,7 +11,7 @@ function getSupabase() {
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -58,6 +58,32 @@ module.exports = async function handler(req, res) {
     }
 
     return res.status(200).json({ ok: true });
+  }
+
+  // PUT /api/sent-status — batch replace all statuses
+  // Body: { sentStatuses: { [key]: boolean } }
+  if (req.method === 'PUT') {
+    const { sentStatuses } = req.body || {};
+    if (!sentStatuses || typeof sentStatuses !== 'object') {
+      return res.status(400).json({ error: 'sentStatuses object required' });
+    }
+
+    // Delete existing statuses
+    await supabase.from('sent_statuses').delete().neq('guest_key', '__none__');
+
+    const entries = Object.keys(sentStatuses).filter(k => sentStatuses[k]);
+    if (entries.length > 0) {
+      const insertData = entries.map(guest_key => ({
+        guest_key,
+        is_sent: true,
+        sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+      const { error } = await supabase.from('sent_statuses').insert(insertData);
+      if (error) return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ ok: true, count: entries.length });
   }
 
   // DELETE /api/sent-status — reset all statuses

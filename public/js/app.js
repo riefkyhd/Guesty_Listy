@@ -82,6 +82,7 @@
     btnModalCopyLink: document.getElementById('btnModalCopyLink'),
     btnModalCopyText: document.getElementById('btnModalCopyText'),
     btnModalSendWa: document.getElementById('btnModalSendWa'),
+    btnModalDeleteGuest: document.getElementById('btnModalDeleteGuest'),
     // Custom Confirmation Modal
     customConfirmModal: document.getElementById('customConfirmModal'),
     confirmModalIconWrap: document.getElementById('confirmModalIconWrap'),
@@ -279,8 +280,7 @@
     dom.confirmModalIconWrap.className = `confirm-modal-icon-wrap ${theme}-theme`;
     dom.btnProceedConfirm.className = `btn btn-${theme === 'info' ? 'primary' : 'danger'}`;
 
-    const iconEl = document.getElementById('confirmModalIcon');
-    if (iconEl) iconEl.setAttribute('data-lucide', icon);
+    dom.confirmModalIconWrap.innerHTML = `<i data-lucide="${icon}" id="confirmModalIcon"></i>`;
     setupLucideIcons();
 
     pendingConfirmAction = onConfirm;
@@ -368,6 +368,16 @@
       body: JSON.stringify(body)
     });
     if (!res.ok) throw new Error(`${path} POST failed: ${res.status}`);
+    return res.json();
+  }
+
+  async function apiPut(path, body) {
+    const res = await fetch(path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`${path} PUT failed: ${res.status}`);
     return res.json();
   }
 
@@ -548,6 +558,76 @@
     }
   }
 
+  // ===========================================================================
+  // Delete Guest with Custom Confirmation Modal
+  // ===========================================================================
+  function confirmDeleteGuest(index) {
+    if (index < 0 || index >= state.rawRows.length) return;
+    const row = state.rawRows[index];
+    const guestName = (row['Nama'] || row['Name'] || `Tamu #${index + 1}`).trim();
+
+    showCustomConfirm({
+      title: 'Hapus Tamu',
+      message: `Apakah Anda yakin ingin menghapus "${guestName}" dari daftar undangan? Tindakan ini tidak dapat dibatalkan.`,
+      icon: 'trash-2',
+      theme: 'danger',
+      confirmText: 'Ya, Hapus Tamu',
+      cancelText: 'Batal',
+      onConfirm: async () => {
+        await deleteGuestAtIndex(index, guestName);
+      }
+    });
+  }
+
+  async function deleteGuestAtIndex(index, guestName) {
+    if (index < 0 || index >= state.rawRows.length) return;
+
+    // Preserve isSent status for each row
+    const isSentArray = state.rawRows.map((r, i) => isRowSent(r, i));
+
+    // Remove row
+    state.rawRows.splice(index, 1);
+    isSentArray.splice(index, 1);
+
+    // Rebuild sentStatuses mapped to new shifted row keys
+    const newSentStatuses = {};
+    state.rawRows.forEach((r, i) => {
+      if (isSentArray[i]) {
+        newSentStatuses[getRowKey(r, i)] = true;
+      }
+    });
+    state.sentStatuses = newSentStatuses;
+
+    // Adjust expanded index if mobile card was expanded
+    if (state.expandedGuestIndex === index) {
+      state.expandedGuestIndex = null;
+    } else if (state.expandedGuestIndex !== null && state.expandedGuestIndex > index) {
+      state.expandedGuestIndex--;
+    }
+
+    // Adjust preview selection if deleted guest was selected
+    if (state.selectedPreviewIndex >= state.rawRows.length) {
+      state.selectedPreviewIndex = Math.max(0, state.rawRows.length - 1);
+    }
+
+    // Persist changes to Supabase
+    try {
+      await saveGuestsToSupabase(state.rawRows);
+      await apiPut('/api/sent-status', { sentStatuses: state.sentStatuses });
+    } catch (e) {
+      console.warn('Failed to sync guest deletion to cloud', e);
+    }
+
+    // Update UI components
+    updateFileStatusBar(null, state.rawRows.length);
+    populatePreviewGuestDropdown();
+    renderTable();
+    updateStatsAndProgress();
+    updateLivePreview();
+
+    showToast(`Tamu "${guestName}" berhasil dihapus.`, 'success');
+  }
+
   function loadDefaultExcel() {
     return fetch('/api/default-excel')
       .then(res => {
@@ -618,7 +698,7 @@
 
   function updateFileStatusBar(filename, count) {
     dom.fileStatusBar.style.display = 'flex';
-    dom.loadedFileName.textContent = filename;
+    if (filename) dom.loadedFileName.textContent = filename;
     dom.loadedFileDetails.textContent = `${count} Tamu Undangan terdeteksi`;
   }
 
@@ -857,10 +937,18 @@
       btnView.title = 'Lihat detail pesan';
       btnView.addEventListener('click', () => openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo));
 
+      const btnDelete = document.createElement('button');
+      btnDelete.type = 'button';
+      btnDelete.className = 'btn-delete-row';
+      btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px;height:14px;"></i>`;
+      btnDelete.title = `Hapus ${guestName}`;
+      btnDelete.addEventListener('click', () => confirmDeleteGuest(originalIndex));
+
       actionsWrapper.appendChild(btnSend);
       actionsWrapper.appendChild(btnCopyLink);
       actionsWrapper.appendChild(btnCopyMsg);
       actionsWrapper.appendChild(btnView);
+      actionsWrapper.appendChild(btnDelete);
       tdActions.appendChild(actionsWrapper);
 
       tr.appendChild(tdNo);
@@ -916,12 +1004,17 @@
               </div>
 
               <div class="mobile-drawer-actions">
-                <button type="button" class="btn btn-outline btn-sm btn-drawer-preview">
-                  <i data-lucide="eye"></i> Preview
-                </button>
                 <button type="button" class="btn btn-primary btn-sm btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}">
                   <i data-lucide="send"></i> Buka WA
                 </button>
+                <div class="mobile-drawer-actions-secondary">
+                  <button type="button" class="btn btn-outline btn-sm btn-drawer-preview">
+                    <i data-lucide="eye"></i> Preview
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm btn-drawer-delete">
+                    <i data-lucide="trash-2"></i> Hapus
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -957,6 +1050,14 @@
           e.stopPropagation();
           openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo);
         });
+
+        const btnDeleteMobile = card.querySelector('.btn-drawer-delete');
+        if (btnDeleteMobile) {
+          btnDeleteMobile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            confirmDeleteGuest(originalIndex);
+          });
+        }
 
         const btnSend = card.querySelector('.btn-drawer-send');
         if (phoneInfo.isValid) {
@@ -1115,6 +1216,12 @@
     dom.btnModalSendWa.disabled = !phoneInfo.isValid;
     dom.btnModalCopyLink.onclick = () => copyToClipboard(waUrl, 'Link wa.me berhasil disalin!');
     dom.btnModalCopyText.onclick = () => copyToClipboard(compiledMsg, 'Teks pesan berhasil disalin!');
+    if (dom.btnModalDeleteGuest) {
+      dom.btnModalDeleteGuest.onclick = () => {
+        closeModal();
+        confirmDeleteGuest(index);
+      };
+    }
     dom.btnModalSendWa.onclick = async () => {
       if (phoneInfo.isValid) {
         window.open(waUrl, '_blank');

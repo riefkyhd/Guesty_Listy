@@ -32,17 +32,19 @@ module.exports = async function handler(req, res) {
   // POST /api/guests — replace entire guest list with new parsed rows
   if (req.method === 'POST') {
     const { rows } = req.body || {};
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    if (!rows || !Array.isArray(rows)) {
       return res.status(400).json({ error: 'rows array required' });
     }
 
     // Delete existing guests and replace
     await supabase.from('guests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-    const insertData = rows.map((raw_data, row_index) => ({ row_index, raw_data }));
-    const { error } = await supabase.from('guests').insert(insertData);
+    if (rows.length > 0) {
+      const insertData = rows.map((raw_data, row_index) => ({ row_index, raw_data }));
+      const { error } = await supabase.from('guests').insert(insertData);
+      if (error) return res.status(500).json({ error: error.message });
+    }
 
-    if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ ok: true, count: rows.length });
   }
 
