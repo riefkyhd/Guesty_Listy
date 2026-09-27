@@ -56,7 +56,9 @@
     btnMarkAllSent: document.getElementById('btnMarkAllSent'),
     btnResetAllSent: document.getElementById('btnResetAllSent'),
     recipientsTableBody: document.getElementById('recipientsTableBody'),
+    recipientsTable: document.getElementById('recipientsTable'),
     emptyState: document.getElementById('emptyState'),
+    initialLoadingState: document.getElementById('initialLoadingState'),
     showingCountText: document.getElementById('showingCountText'),
     progressPercentage: document.getElementById('progressPercentage'),
     progressBarFill: document.getElementById('progressBarFill'),
@@ -98,6 +100,28 @@
     syncLabel: document.getElementById('syncLabel'),
     footerSyncStatus: document.getElementById('footerSyncStatus')
   };
+
+  function setInitialLoading(isLoading) {
+    if (!dom.initialLoadingState) return;
+    if (isLoading) {
+      dom.initialLoadingState.style.display = 'block';
+      if (dom.emptyState) dom.emptyState.style.display = 'none';
+      if (dom.recipientsTable) dom.recipientsTable.style.display = 'none';
+      if (dom.mobileCardsList) dom.mobileCardsList.style.display = 'none';
+      if (dom.showingCountText) dom.showingCountText.textContent = 'Memuat data undangan...';
+      if (dom.livePreviewBubble) {
+        dom.livePreviewBubble.innerHTML = `
+          <div class="preview-loading">
+            <div class="mini-spinner"></div>
+            <span>Memuat preview pesan...</span>
+          </div>`;
+      }
+    } else {
+      dom.initialLoadingState.style.display = 'none';
+      if (dom.recipientsTable) dom.recipientsTable.style.display = '';
+      if (dom.mobileCardsList) dom.mobileCardsList.style.display = '';
+    }
+  }
 
   // ===========================================================================
   // PIN Gate
@@ -464,7 +488,7 @@
   }
 
   function loadDefaultExcel() {
-    fetch('/api/default-excel')
+    return fetch('/api/default-excel')
       .then(res => {
         if (!res.ok) throw new Error('Default Excel not found');
         return res.arrayBuffer();
@@ -661,8 +685,12 @@
     if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
 
     if (state.rawRows.length === 0) {
-      dom.emptyState.style.display = 'block';
-      dom.showingCountText.textContent = 'Menampilkan 0 undangan';
+      if (dom.initialLoadingState && dom.initialLoadingState.style.display === 'block') {
+        if (dom.emptyState) dom.emptyState.style.display = 'none';
+      } else {
+        if (dom.emptyState) dom.emptyState.style.display = 'block';
+        dom.showingCountText.textContent = 'Menampilkan 0 undangan';
+      }
       return;
     }
     const filtered = filterRows();
@@ -1325,6 +1353,9 @@
     setupLucideIcons();
     setupRealtime();
 
+    // Show loading state when data is still loading
+    setInitialLoading(true);
+
     // Load template
     const savedCustom = await loadCustomTemplate();
     if (savedCustom) {
@@ -1341,11 +1372,20 @@
     await loadSentStatuses();
 
     // Load guests: prefer Supabase, fall back to default Excel
-    const loadedFromDB = await loadGuestsFromSupabase();
-    if (!loadedFromDB) {
-      loadDefaultExcel();
-    } else {
-      updateLivePreview();
+    try {
+      const loadedFromDB = await loadGuestsFromSupabase();
+      if (!loadedFromDB) {
+        await loadDefaultExcel();
+      } else {
+        updateLivePreview();
+      }
+    } catch (err) {
+      console.warn('Error loading initial guests:', err);
+    } finally {
+      setInitialLoading(false);
+      if (state.rawRows.length === 0) {
+        renderTable();
+      }
     }
   }
 

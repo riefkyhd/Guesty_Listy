@@ -1054,6 +1054,68 @@ textarea#templateInput {
   pointer-events: none;
 }
 
+/* Initial Loading State */
+.loading-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--slate-500);
+}
+
+.loading-spinner-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.loading-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid #DBEAFE;
+  border-top-color: var(--primary-blue);
+  border-radius: 50%;
+  animation: spinnerRotate 0.8s linear infinite;
+}
+
+.loading-state h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--slate-800);
+  margin-bottom: 6px;
+}
+
+.loading-state p {
+  font-size: 0.84rem;
+  color: var(--slate-500);
+}
+
+.preview-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--slate-600);
+  font-size: 0.84rem;
+  padding: 8px 4px;
+}
+
+.mini-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(22, 163, 74, 0.25);
+  border-top-color: #16A34A;
+  border-radius: 50%;
+  animation: spinnerRotate 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
 /* Empty State */
 .empty-state {
   padding: 60px 20px;
