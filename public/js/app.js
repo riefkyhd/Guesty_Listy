@@ -1566,11 +1566,9 @@
       if (sideFilter === 'dhifa' && guestSide !== 'dhifa') return false;
       if (sideFilter === 'riefky' && guestSide !== 'riefky') return false;
 
-      // 2. Status / WhatsApp filter
+      // 2. Status filter
       if (filter === 'pending' && isSent) return false;
       if (filter === 'sent' && !isSent) return false;
-      if (filter === 'has-phone' && !phoneInfo.isValid) return false;
-      if (filter === 'no-phone' && phoneInfo.isValid) return false;
 
       // 3. Search query
       if (q) return name.includes(q) || label.includes(q) || phone.includes(q) || note.includes(q);
@@ -1626,13 +1624,9 @@
     const countAllEl = document.getElementById('countFilterAll');
     const countPendingEl = document.getElementById('countFilterPending');
     const countSentEl = document.getElementById('countFilterSent');
-    const countHasPhoneEl = document.getElementById('countFilterHasPhone');
-    const countNoPhoneEl = document.getElementById('countFilterNoPhone');
     if (countAllEl) countAllEl.textContent = total;
     if (countPendingEl) countPendingEl.textContent = pendingCount;
     if (countSentEl) countSentEl.textContent = sentCount;
-    if (countHasPhoneEl) countHasPhoneEl.textContent = withPhone;
-    if (countNoPhoneEl) countNoPhoneEl.textContent = total - withPhone;
 
     // Pihak filter counters
     const countSideAllEl = document.getElementById('countSideAll');
