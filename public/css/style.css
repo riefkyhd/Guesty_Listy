@@ -2251,42 +2251,162 @@ textarea#templateInput {
     padding: 6px 0 0;
   }
 
-  /* Modal Mobile Responsiveness */
+  /* Modal Mobile Responsiveness: Native Bottom Sheet */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .modal-box {
-    margin: 10px;
-    max-height: 94vh;
-    border-radius: 16px;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: 90vh;
+    animation: bottomSheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .modal-top {
-    padding: 16px 18px;
+    padding: 16px 20px;
+    border-radius: 24px 24px 0 0;
   }
 
   .modal-content {
-    padding: 16px 18px;
+    padding: 16px 20px;
   }
 
   .modal-bottom {
     flex-direction: column-reverse;
     gap: 10px;
-    padding: 16px 18px;
+    padding: 16px 20px calc(18px + env(safe-area-inset-bottom, 0px));
   }
 
   .modal-bottom .btn {
     width: 100%;
+    min-height: 44px;
+  }
+
+  /* Custom Confirm Dialog: Native Mobile Bottom Sheet */
+  .confirm-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
   }
 
   .confirm-modal-box {
-    padding: 24px 18px 20px;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    margin: 0;
+    padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 16px));
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.28);
+    animation: bottomSheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .confirm-modal-box::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--slate-300);
+    border-radius: 9999px;
+    margin: 0 auto 16px;
+  }
+
+  .confirm-modal-icon-wrap {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 14px;
+  }
+
+  .confirm-modal-title {
+    font-size: 1.15rem;
+    margin-bottom: 6px;
+  }
+
+  .confirm-modal-message {
+    font-size: 0.88rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
   }
 
   .confirm-modal-actions {
     flex-direction: column-reverse;
     gap: 10px;
+    width: 100%;
   }
 
   .confirm-modal-actions .btn {
     width: 100%;
+    min-height: 46px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+  }
+
+  @keyframes bottomSheetIn {
+    from {
+      transform: translateY(100%);
+      opacity: 0.8;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Floating Pill Toast Shelf on Mobile */
+  .toast-shelf {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 10000;
+  }
+
+  .toast {
+    border-radius: 9999px;
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    background: rgba(15, 23, 42, 0.94);
+    color: #FFFFFF;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    max-width: calc(100vw - 32px);
+    width: auto;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+    animation: mobileToastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .toast.toast-danger {
+    background: rgba(220, 38, 38, 0.95);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes mobileToastIn {
+    from {
+      transform: translateY(20px) scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .pin-card {
+    padding: 32px 20px 28px;
+    margin: 16px;
+    border-radius: 20px;
   }
 }
 

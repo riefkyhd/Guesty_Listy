@@ -22,8 +22,13 @@
   <!-- Lucide Icons (Local vendor to prevent Safari WebKit ITP warnings) -->
   <script src="/vendor/lucide.min.js"></script>
 
-  <!-- Supabase JS SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- Supabase JS SDK (Local vendor to prevent Safari WebKit ITP warnings) -->
+  <script src="/vendor/supabase.min.js"></script>
+  <script>
+    if (typeof window.supabase === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
+    }
+  </script>
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/css/style.css">

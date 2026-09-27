@@ -713,7 +713,6 @@
       const tdName = document.createElement('td');
       tdName.className = 'col-name';
       let chips = '';
-      if (sapaan) chips += `<span class="meta-chip">${escapeHtml(sapaan)}</span>`;
       chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
       if (label) chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
       tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div><div class="guest-meta-tags">${chips}</div></div>`;
@@ -1013,7 +1012,7 @@
     const isSent = isRowSent(row, index);
     const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
 
-    dom.modalGuestTitle.textContent = `Pesan Undangan: ${sapaan} ${name}`;
+    dom.modalGuestTitle.textContent = `Pesan Undangan: ${name}`;
     dom.modalGuestInfo.innerHTML = `
       <span class="meta-chip">Undangan #${index + 1}</span>
       <span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>
