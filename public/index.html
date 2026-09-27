@@ -147,7 +147,7 @@
             </div>
             <div class="dropzone-text">
               <p class="dropzone-main">Klik atau seret file <strong>Excel (.xlsx / .xls)</strong> ke sini</p>
-              <p class="dropzone-sub">Otomatis membaca nama, sapaan, link, dan nomor WhatsApp</p>
+              <p class="dropzone-sub">Tambahkan tamu baru tanpa menimpa data yang ada (otomatis cek duplikat)</p>
             </div>
           </div>
 
@@ -276,6 +276,13 @@
             </button>
           </div>
 
+          <!-- Pihak Filter Group (Dhifa vs Riefky) -->
+          <div class="side-filter-group" id="sideFilterGroup">
+            <button class="side-tab active" data-side="all">Semua Pihak (<span id="countSideAll">0</span>)</button>
+            <button class="side-tab side-tab-dhifa" data-side="dhifa">🌸 Dhifa (<span id="countSideDhifa">0</span>)</button>
+            <button class="side-tab side-tab-riefky" data-side="riefky">💼 Riefky (<span id="countSideRiefky">0</span>)</button>
+          </div>
+
           <!-- Filter Pills -->
           <div class="filter-group" id="filterPills">
             <button class="filter-tab active" data-filter="all">Semua (<span id="countFilterAll">0</span>)</button>
@@ -399,6 +406,85 @@
       <div class="confirm-modal-actions">
         <button id="btnCancelConfirm" class="btn btn-outline">Batal</button>
         <button id="btnProceedConfirm" class="btn btn-danger">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Excel Import Preview Modal with Duplicate Detection -->
+  <div class="modal-overlay import-modal-overlay" id="importPreviewModal" style="display: none;">
+    <div class="modal-box import-modal-box">
+      <div class="modal-top import-modal-top">
+        <div class="import-modal-title-group">
+          <div class="import-modal-icon">
+            <i data-lucide="file-spreadsheet"></i>
+          </div>
+          <div>
+            <h3 class="modal-heading" id="importModalTitle">Preview Impor Data Excel</h3>
+            <p class="import-modal-subtitle" id="importModalSubtitle">Memeriksa data dan mendeteksi duplikasi tamu...</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseImportModal" title="Tutup"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="modal-content import-modal-content">
+        <!-- Summary Stat Cards -->
+        <div class="import-summary-cards">
+          <div class="import-stat-card">
+            <span class="import-stat-label">Total di Excel</span>
+            <span class="import-stat-val" id="importStatTotal">0</span>
+            <span class="import-stat-sub">Baris terdeteksi</span>
+          </div>
+          <div class="import-stat-card import-stat-new">
+            <span class="import-stat-label">Tamu Baru</span>
+            <span class="import-stat-val" id="importStatNew">0</span>
+            <span class="import-stat-sub">Siap ditambahkan</span>
+          </div>
+          <div class="import-stat-card import-stat-dup">
+            <span class="import-stat-label">Duplikat Ditemukan</span>
+            <span class="import-stat-val" id="importStatDup">0</span>
+            <span class="import-stat-sub">Dilewati otomatis</span>
+          </div>
+        </div>
+
+        <!-- Duplicate Alert Banner -->
+        <div class="import-alert-banner" id="importDupAlert" style="display: none;">
+          <div class="import-alert-icon-wrap">
+            <i data-lucide="alert-triangle" class="import-alert-icon"></i>
+          </div>
+          <div class="import-alert-text">
+            <strong>Duplikasi Terdeteksi:</strong> Ditemukan <span id="importDupAlertCount">0</span> nama tamu yang sudah ada di daftar undangan. Tamu duplikat otomatis ditandai dan dilewati agar data yang ada tidak terhapus atau tertimpa.
+          </div>
+        </div>
+
+        <!-- Scrollable Table of Incoming Rows -->
+        <div class="import-table-container">
+          <table class="import-data-table">
+            <thead>
+              <tr>
+                <th class="import-col-check">
+                  <input type="checkbox" id="selectAllNewImport" checked title="Pilih Semua Tamu Baru">
+                </th>
+                <th class="import-col-num">No</th>
+                <th class="import-col-status">Status Impor</th>
+                <th class="import-col-name">Nama Tamu</th>
+                <th class="import-col-side">Pihak</th>
+                <th class="import-col-pax">Pax</th>
+                <th class="import-col-phone">Nomor WA</th>
+                <th class="import-col-note">Catatan</th>
+              </tr>
+            </thead>
+            <tbody id="importPreviewTableBody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-bottom import-modal-bottom">
+        <button id="btnCancelImport" class="btn btn-outline">Batal</button>
+        <button id="btnConfirmImport" class="btn btn-primary">
+          <i data-lucide="user-plus"></i> <span id="btnConfirmImportText">Konfirmasi Tambahkan</span>
+        </button>
       </div>
     </div>
   </div>

@@ -709,6 +709,67 @@ textarea#templateInput {
   cursor: pointer;
 }
 
+/* Pihak (Side) Filter Tabs */
+.side-filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.side-tab {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-300);
+  color: var(--slate-700);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.side-tab:hover {
+  background: var(--slate-100);
+  color: var(--slate-900);
+}
+
+.side-tab.active {
+  background: var(--slate-800);
+  border-color: var(--slate-800);
+  color: #FFFFFF;
+}
+
+.side-tab.side-tab-dhifa:hover {
+  background: #FDF2F8;
+  border-color: #FBCFE8;
+  color: #9D174D;
+}
+
+.side-tab.side-tab-dhifa.active {
+  background: #DB2777;
+  border-color: #BE185D;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.28);
+}
+
+.side-tab.side-tab-riefky:hover {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #1E40AF;
+}
+
+.side-tab.side-tab-riefky.active {
+  background: #2563EB;
+  border-color: #1D4ED8;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+}
+
 .filter-group {
   display: flex;
   gap: 6px;
@@ -908,6 +969,25 @@ textarea#templateInput {
   background: #EFF6FF;
   border-color: #BFDBFE;
   color: #1D4ED8;
+}
+
+.meta-chip-dhifa {
+  background: #FDF2F8;
+  border-color: #FBCFE8;
+  color: #BE185D;
+}
+
+.meta-chip-riefky {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #1D4ED8;
+}
+
+.meta-chip-note {
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+  color: #64748B;
+  font-weight: 500;
 }
 
 /* Phone Cell Formatting */
@@ -1866,6 +1946,296 @@ textarea#templateInput {
 }
 
 /* ==========================================================================
+   Import Preview Modal & Duplicate Indicator
+   ========================================================================== */
+.import-modal-overlay {
+  z-index: 1050;
+}
+
+.import-modal-box {
+  max-width: 960px;
+  width: 95vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.import-modal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 22px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.import-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.import-modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.import-modal-subtitle {
+  font-size: 0.78rem;
+  color: var(--slate-500);
+  margin-top: 2px;
+}
+
+.import-modal-content {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #F8FAFC;
+}
+
+/* Stat Cards in Modal */
+.import-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .import-summary-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.import-stat-card {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.import-stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.import-stat-val {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--slate-800);
+  margin-top: 2px;
+}
+
+.import-stat-sub {
+  font-size: 0.72rem;
+  color: var(--slate-400);
+  margin-top: 2px;
+}
+
+.import-stat-new {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+}
+.import-stat-new .import-stat-label { color: #15803D; }
+.import-stat-new .import-stat-val { color: #166534; }
+.import-stat-new .import-stat-sub { color: #15803D; font-weight: 600; }
+
+.import-stat-dup {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+.import-stat-dup .import-stat-label { color: #B45309; }
+.import-stat-dup .import-stat-val { color: #92400E; }
+.import-stat-dup .import-stat-sub { color: #B45309; font-weight: 600; }
+
+/* Alert Banner */
+.import-alert-banner {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: fadeIn 0.2s ease;
+}
+
+.import-alert-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FEF3C7;
+  color: #D97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.import-alert-text {
+  font-size: 0.82rem;
+  color: #92400E;
+  line-height: 1.5;
+}
+
+/* Import Preview Table */
+.import-table-container {
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  overflow: auto;
+  max-height: 380px;
+  box-shadow: var(--shadow-sm);
+}
+
+.import-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.import-data-table th {
+  background: var(--slate-50);
+  color: var(--slate-600);
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--slate-200);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.import-data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--slate-100);
+  vertical-align: middle;
+}
+
+.import-data-table tr:hover {
+  background: #F8FAFC;
+}
+
+/* Row states */
+.import-row-new {
+  background: #FFFFFF;
+}
+
+.import-row-dup {
+  background: #FFFDF5;
+  color: var(--slate-500);
+}
+
+.import-row-dup td {
+  color: var(--slate-500);
+}
+
+.import-row-dup .import-guest-name {
+  color: var(--slate-600);
+}
+
+/* Badges inside import table */
+.badge-import-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+  color: #166534;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.badge-import-dup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.import-guest-name {
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.import-col-check {
+  width: 38px;
+  text-align: center;
+}
+
+.import-col-num {
+  width: 40px;
+  text-align: center;
+  color: var(--slate-400);
+  font-weight: 600;
+}
+
+.import-col-status {
+  width: 140px;
+}
+
+.import-col-side {
+  width: 110px;
+}
+
+.import-col-pax {
+  width: 85px;
+}
+
+.import-col-phone {
+  width: 145px;
+  font-family: var(--font-mono);
+}
+
+.import-checkbox {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: #16A34A;
+}
+
+.import-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.import-modal-bottom {
+  padding: 16px 22px;
+  background: #FFFFFF;
+  border-top: 1px solid var(--slate-200);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ==========================================================================
    WhatsApp Authentic Chat Bubble & URL Card (Point 5 & 6)
    ========================================================================== */
 .wa-preview-wrapper {
@@ -2073,6 +2443,30 @@ textarea#templateInput {
   border-radius: var(--radius-full);
   white-space: nowrap;
   line-height: 1.2;
+}
+
+.mobile-side-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.mobile-side-badge.side-dhifa {
+  color: #9D174D;
+  background: #FCE7F3;
+  border: 1px solid #FBCFE8;
+}
+
+.mobile-side-badge.side-riefky {
+  color: #1E40AF;
+  background: #DBEAFE;
+  border: 1px solid #BFDBFE;
 }
 
 .mobile-guest-header-actions {

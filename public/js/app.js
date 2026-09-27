@@ -24,6 +24,7 @@
     columns: [],
     phoneColumn: '',
     currentFilter: 'all',
+    currentSideFilter: 'all',
     searchQuery: '',
     selectedPreviewIndex: 0,
     sentStatuses: {},
@@ -53,6 +54,7 @@
     searchInput: document.getElementById('searchInput'),
     btnClearSearch: document.getElementById('btnClearSearch'),
     filterPills: document.getElementById('filterPills'),
+    sideFilterGroup: document.getElementById('sideFilterGroup'),
     btnMarkAllSent: document.getElementById('btnMarkAllSent'),
     btnResetAllSent: document.getElementById('btnResetAllSent'),
     recipientsTableBody: document.getElementById('recipientsTableBody'),
@@ -90,6 +92,21 @@
     confirmModalMessage: document.getElementById('confirmModalMessage'),
     btnCancelConfirm: document.getElementById('btnCancelConfirm'),
     btnProceedConfirm: document.getElementById('btnProceedConfirm'),
+    // Import Preview Modal with Duplicate Detection
+    importPreviewModal: document.getElementById('importPreviewModal'),
+    btnCloseImportModal: document.getElementById('btnCloseImportModal'),
+    btnCancelImport: document.getElementById('btnCancelImport'),
+    btnConfirmImport: document.getElementById('btnConfirmImport'),
+    btnConfirmImportText: document.getElementById('btnConfirmImportText'),
+    importModalTitle: document.getElementById('importModalTitle'),
+    importModalSubtitle: document.getElementById('importModalSubtitle'),
+    importStatTotal: document.getElementById('importStatTotal'),
+    importStatNew: document.getElementById('importStatNew'),
+    importStatDup: document.getElementById('importStatDup'),
+    importDupAlert: document.getElementById('importDupAlert'),
+    importDupAlertCount: document.getElementById('importDupAlertCount'),
+    importPreviewTableBody: document.getElementById('importPreviewTableBody'),
+    selectAllNewImport: document.getElementById('selectAllNewImport'),
     // PIN Gate
     pinOverlay: document.getElementById('pinOverlay'),
     pinInput: document.getElementById('pinInput'),
@@ -755,7 +772,7 @@
     showToast(`Tamu "${guestName}" berhasil dihapus.`, 'success');
   }
 
-  function loadDefaultExcel() {
+  function loadDefaultExcelDirectly() {
     return fetch('/api/default-excel')
       .then(res => {
         if (!res.ok) throw new Error('Default Excel not found');
@@ -768,10 +785,29 @@
         if (rows.length > 0) {
           processRows(rows, 'invitation_list_36032.xlsx (Bawaan)');
           saveGuestsToSupabase(rows);
-          showToast('Template bawaan berhasil dimuat!', 'success');
         }
       })
-      .catch(err => console.warn('Could not auto-load default Excel:', err));
+      .catch(err => console.warn('Could not auto-load default Excel directly:', err));
+  }
+
+  function loadDefaultExcel() {
+    return fetch('/api/default-excel')
+      .then(res => {
+        if (!res.ok) throw new Error('Default Excel not found');
+        return res.arrayBuffer();
+      })
+      .then(buffer => {
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        if (rows && rows.length > 0) {
+          openImportPreviewModal(rows, 'invitation_list_36032.xlsx (Bawaan)');
+        }
+      })
+      .catch(err => {
+        console.warn('Could not load default Excel:', err);
+        showToast('Gagal memuat template Excel bawaan.', 'danger');
+      });
   }
 
   function processExcelFile(file) {
@@ -783,18 +819,254 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
         if (!rows || rows.length === 0) {
-          showToast('File Excel kosong atau tidak memiliki data.', 'danger');
+          showToast('File Excel kosong atau tidak memiliki data baris.', 'danger');
           return;
         }
-        processRows(rows, file.name);
-        await saveGuestsToSupabase(rows);
-        showToast(`${file.name} berhasil dimuat & disimpan!`, 'success');
+        openImportPreviewModal(rows, file.name);
       } catch (err) {
         console.error('Error parsing Excel:', err);
         showToast('Gagal membaca file Excel. Pastikan format valid.', 'danger');
       }
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  // ===========================================================================
+  // Excel Import Preview Modal with Non-Destructive Duplicate Detection
+  // ===========================================================================
+  let pendingImportItems = [];
+  let pendingImportFilename = '';
+
+  function openImportPreviewModal(incomingRows, filename) {
+    if (!incomingRows || incomingRows.length === 0) {
+      showToast('File Excel kosong atau tidak memiliki data.', 'danger');
+      return;
+    }
+
+    pendingImportFilename = filename || 'Data Excel';
+
+    // Map existing guest names strictly by name (case-insensitive & trimmed)
+    const existingNamesSet = new Set();
+    state.rawRows.forEach(r => {
+      const name = (r['Nama'] || r['Name'] || '').toString().trim().toLowerCase();
+      if (name) existingNamesSet.add(name);
+    });
+
+    const seenInIncomingBatch = new Set();
+    const phoneCol = detectPhoneColumn(Object.keys(incomingRows[0] || {}));
+
+    pendingImportItems = incomingRows.map((row, idx) => {
+      const rawName = (row['Nama'] || row['Name'] || '').toString().trim();
+      const lowerName = rawName.toLowerCase();
+      const isAlreadyInList = lowerName ? existingNamesSet.has(lowerName) : false;
+      const isDuplicateInBatch = lowerName ? seenInIncomingBatch.has(lowerName) : false;
+      const isDuplicate = isAlreadyInList || isDuplicateInBatch;
+
+      if (!isDuplicate && lowerName) {
+        seenInIncomingBatch.add(lowerName);
+      }
+
+      const side = getGuestSide(row);
+      const note = getGuestNote(row);
+      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+      const phoneInfo = normalizePhone(row[phoneCol]);
+
+      return {
+        row,
+        index: idx,
+        name: rawName || `Tamu #${idx + 1}`,
+        isDuplicate,
+        duplicateReason: isAlreadyInList ? 'Sudah ada di daftar tamu' : (isDuplicateInBatch ? 'Duplikat dalam file Excel ini' : ''),
+        side,
+        note,
+        pax,
+        phoneInfo,
+        selected: !isDuplicate // New guests checked by default, duplicates unchecked
+      };
+    });
+
+    renderImportPreviewModal();
+  }
+
+  function renderImportPreviewModal() {
+    const totalCount = pendingImportItems.length;
+    const newItems = pendingImportItems.filter(i => !i.isDuplicate);
+    const dupItems = pendingImportItems.filter(i => i.isDuplicate);
+    const selectedNewCount = pendingImportItems.filter(i => i.selected && !i.isDuplicate).length;
+
+    dom.importModalTitle.textContent = 'Preview Impor Data Excel';
+    dom.importModalSubtitle.textContent = `File: ${pendingImportFilename} (${totalCount} baris terdeteksi)`;
+
+    dom.importStatTotal.textContent = totalCount;
+    dom.importStatNew.textContent = newItems.length;
+    dom.importStatDup.textContent = dupItems.length;
+
+    if (dupItems.length > 0) {
+      dom.importDupAlert.style.display = 'flex';
+      dom.importDupAlertCount.textContent = dupItems.length;
+    } else {
+      dom.importDupAlert.style.display = 'none';
+    }
+
+    if (dom.selectAllNewImport) {
+      dom.selectAllNewImport.checked = newItems.length > 0 && selectedNewCount === newItems.length;
+      dom.selectAllNewImport.disabled = newItems.length === 0;
+    }
+
+    updateConfirmImportButton();
+
+    // Render Rows in Import Table
+    dom.importPreviewTableBody.innerHTML = '';
+    pendingImportItems.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+      tr.className = item.isDuplicate ? 'import-row-dup' : 'import-row-new';
+
+      // Checkbox
+      const tdCheck = document.createElement('td');
+      tdCheck.className = 'import-col-check';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'import-checkbox';
+      chk.checked = item.selected;
+      chk.disabled = item.isDuplicate; // duplicate cannot be checked (skipped automatically)
+      if (item.isDuplicate) {
+        chk.title = 'Tamu duplikat dilewati secara otomatis agar tidak menimpa data yang ada';
+      } else {
+        chk.title = 'Pilih untuk menambahkan tamu ini';
+        chk.addEventListener('change', () => {
+          item.selected = chk.checked;
+          const currentSelected = pendingImportItems.filter(i => i.selected && !i.isDuplicate).length;
+          if (dom.selectAllNewImport) {
+            dom.selectAllNewImport.checked = currentSelected === newItems.length;
+          }
+          updateConfirmImportButton();
+        });
+      }
+      tdCheck.appendChild(chk);
+
+      // No
+      const tdNo = document.createElement('td');
+      tdNo.className = 'import-col-num';
+      tdNo.textContent = idx + 1;
+
+      // Status Impor
+      const tdStatus = document.createElement('td');
+      tdStatus.className = 'import-col-status';
+      if (item.isDuplicate) {
+        tdStatus.innerHTML = `<span class="badge-import-dup" title="${escapeHtml(item.duplicateReason)}"><i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> Duplikat</span>`;
+      } else {
+        tdStatus.innerHTML = `<span class="badge-import-new"><i data-lucide="check" style="width:12px;height:12px;"></i> Baru</span>`;
+      }
+
+      // Nama Tamu
+      const tdName = document.createElement('td');
+      tdName.innerHTML = `<span class="import-guest-name">${escapeHtml(item.name)}</span>`;
+      if (item.isDuplicate) {
+        tdName.innerHTML += `<div style="font-size:0.72rem;color:#b45309;margin-top:2px;">⚠️ ${escapeHtml(item.duplicateReason)}</div>`;
+      }
+
+      // Pihak
+      const tdSide = document.createElement('td');
+      tdSide.className = 'import-col-side';
+      if (item.side === 'dhifa') {
+        tdSide.innerHTML = `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
+      } else if (item.side === 'riefky') {
+        tdSide.innerHTML = `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
+      } else {
+        tdSide.innerHTML = `<span style="color:var(--slate-400);">-</span>`;
+      }
+
+      // Pax
+      const tdPax = document.createElement('td');
+      tdPax.className = 'import-col-pax';
+      tdPax.innerHTML = `<span class="meta-chip meta-chip-blue">👥 ${item.pax}</span>`;
+
+      // Phone
+      const tdPhone = document.createElement('td');
+      tdPhone.className = 'import-col-phone';
+      tdPhone.innerHTML = item.phoneInfo.isValid
+        ? `<span class="phone-valid">+${escapeHtml(item.phoneInfo.formatted)}</span>`
+        : `<span style="color:var(--slate-400);font-size:0.75rem;">Tanpa WA</span>`;
+
+      // Catatan
+      const tdNote = document.createElement('td');
+      tdNote.innerHTML = item.note ? `<span style="font-size:0.78rem;color:var(--slate-600);">${escapeHtml(item.note)}</span>` : `<span style="color:var(--slate-400);">-</span>`;
+
+      tr.appendChild(tdCheck);
+      tr.appendChild(tdNo);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdName);
+      tr.appendChild(tdSide);
+      tr.appendChild(tdPax);
+      tr.appendChild(tdPhone);
+      tr.appendChild(tdNote);
+      dom.importPreviewTableBody.appendChild(tr);
+    });
+
+    dom.importPreviewModal.style.display = 'flex';
+    setupLucideIcons();
+  }
+
+  function updateConfirmImportButton() {
+    const selectedNewCount = pendingImportItems.filter(i => i.selected && !i.isDuplicate).length;
+    dom.btnConfirmImport.disabled = selectedNewCount === 0;
+    if (dom.btnConfirmImportText) {
+      dom.btnConfirmImportText.textContent = selectedNewCount > 0
+        ? `Konfirmasi Tambahkan (${selectedNewCount} Tamu Baru)`
+        : 'Tidak Ada Tamu Baru Dipilih';
+    }
+  }
+
+  function closeImportPreviewModal() {
+    dom.importPreviewModal.style.display = 'none';
+    pendingImportItems = [];
+    if (dom.fileInput) dom.fileInput.value = '';
+  }
+
+  async function confirmAndAppendNewGuests() {
+    const itemsToAdd = pendingImportItems.filter(i => i.selected && !i.isDuplicate);
+    if (itemsToAdd.length === 0) {
+      showToast('Tidak ada tamu baru yang dipilih untuk ditambahkan.', 'danger');
+      closeImportPreviewModal();
+      return;
+    }
+
+    const dupCount = pendingImportItems.filter(i => i.isDuplicate).length;
+    const newRows = itemsToAdd.map(i => i.row);
+
+    // NON-DESTRUCTIVE APPEND: existing guests are completely preserved!
+    state.rawRows = [...state.rawRows, ...newRows];
+
+    // Merge columns to ensure any new columns from the new Excel are included
+    if (newRows.length > 0 && Object.keys(newRows[0] || {}).length > 0) {
+      const existingCols = new Set(state.columns);
+      Object.keys(newRows[0]).forEach(c => existingCols.add(c));
+      state.columns = Array.from(existingCols);
+      if (!state.phoneColumn) state.phoneColumn = detectPhoneColumn(state.columns);
+      populatePhoneColSelector();
+      renderTagChips();
+    }
+
+    // Save updated full list to Supabase
+    await saveGuestsToSupabase(state.rawRows);
+
+    // Broadcast realtime event to all connected devices
+    broadcastRealtimeEvent('guest_list_updated', {
+      action: 'import',
+      count: state.rawRows.length,
+      added: newRows.length
+    });
+
+    closeImportPreviewModal();
+
+    // Re-render UI
+    updateFileStatusBar(pendingImportFilename, state.rawRows.length);
+    populatePreviewGuestDropdown();
+    renderTable();
+    updateStatsAndProgress();
+    updateLivePreview();
+
+    showToast(`Berhasil menambahkan ${newRows.length} tamu baru! (${dupCount} duplikat dilewati)`, 'success');
   }
 
   function processRows(rows, filename) {
@@ -909,6 +1181,19 @@
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   }
 
+  function getGuestSide(row) {
+    if (!row) return null;
+    const raw = (row['Catatan'] || row['catatan'] || row['Notes'] || row['notes'] || row['Note'] || row['note'] || row['Keterangan'] || row['keterangan'] || row['Pihak'] || row['pihak'] || '').toString().trim().toLowerCase();
+    if (raw.includes('dhifa')) return 'dhifa';
+    if (raw.includes('riefky') || raw.includes('kiki')) return 'riefky';
+    return null;
+  }
+
+  function getGuestNote(row) {
+    if (!row) return '';
+    return (row['Catatan'] || row['catatan'] || row['Notes'] || row['notes'] || row['Note'] || row['note'] || row['Keterangan'] || row['keterangan'] || '').toString().trim();
+  }
+
   // ===========================================================================
   // Live Preview
   // ===========================================================================
@@ -1002,10 +1287,18 @@
       });
       tdStatus.appendChild(btnStatus);
 
+      const side = getGuestSide(row);
+      const note = getGuestNote(row);
+
       const tdName = document.createElement('td');
       tdName.className = 'col-name';
       let chips = '';
       chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
+      if (side === 'dhifa') {
+        chips += `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
+      } else if (side === 'riefky') {
+        chips += `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
+      }
       if (label) chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
       tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div><div class="guest-meta-tags">${chips}</div></div>`;
 
@@ -1102,6 +1395,7 @@
               </div>
               <div class="mobile-guest-sub-row">
                 <span class="mobile-pax-badge"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} Tamu</span>
+                ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky">💼 Riefky</span>` : '')}
                 ${label ? `<span class="mobile-category-badge">${escapeHtml(label)}</span>` : ''}
               </div>
             </div>
@@ -1119,7 +1413,9 @@
           <div class="mobile-guest-drawer">
             <div class="mobile-drawer-inner">
               <div class="mobile-drawer-meta">
+                ${side ? `<div class="mobile-meta-item"><strong>Pihak:</strong> <span class="meta-chip ${side === 'dhifa' ? 'meta-chip-dhifa' : 'meta-chip-riefky'}">${side === 'dhifa' ? '🌸 Dhifa' : '💼 Riefky'}</span></div>` : ''}
                 ${label ? `<div class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</div>` : ''}
+                ${note ? `<div class="mobile-meta-item"><strong>Catatan:</strong> ${escapeHtml(note)}</div>` : ''}
                 <div class="mobile-meta-item">
                   <strong>Nomor WA:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">Tanpa WhatsApp</em>'}
                 </div>
@@ -1255,17 +1551,29 @@
   function filterRows() {
     const q = state.searchQuery.toLowerCase().trim();
     const filter = state.currentFilter;
+    const sideFilter = state.currentSideFilter || 'all';
+
     return state.rawRows.map((row, originalIndex) => ({ row, originalIndex })).filter(({ row, originalIndex }) => {
       const phoneInfo = normalizePhone(row[state.phoneColumn]);
       const isSent = isRowSent(row, originalIndex);
       const name = (row['Nama'] || row['Name'] || '').toString().toLowerCase();
       const label = (row['Label'] || '').toString().toLowerCase();
       const phone = (row[state.phoneColumn] || '').toString().toLowerCase();
+      const note = getGuestNote(row).toLowerCase();
+      const guestSide = getGuestSide(row);
+
+      // 1. Pihak filter (Dhifa vs Riefky)
+      if (sideFilter === 'dhifa' && guestSide !== 'dhifa') return false;
+      if (sideFilter === 'riefky' && guestSide !== 'riefky') return false;
+
+      // 2. Status / WhatsApp filter
       if (filter === 'pending' && isSent) return false;
       if (filter === 'sent' && !isSent) return false;
       if (filter === 'has-phone' && !phoneInfo.isValid) return false;
       if (filter === 'no-phone' && phoneInfo.isValid) return false;
-      if (q) return name.includes(q) || label.includes(q) || phone.includes(q);
+
+      // 3. Search query
+      if (q) return name.includes(q) || label.includes(q) || phone.includes(q) || note.includes(q);
       return true;
     });
   }
@@ -1274,6 +1582,7 @@
     const total = state.rawRows.length;
     let withPhone = 0, sentCount = 0;
     let totalPax = 0, sentPax = 0, withPhonePax = 0;
+    let dhifaCount = 0, riefkyCount = 0;
 
     state.rawRows.forEach((row, idx) => {
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
@@ -1288,6 +1597,10 @@
         sentCount++;
         sentPax += pax;
       }
+
+      const side = getGuestSide(row);
+      if (side === 'dhifa') dhifaCount++;
+      else if (side === 'riefky') riefkyCount++;
     });
 
     const pendingCount = total - sentCount;
@@ -1309,11 +1622,25 @@
     dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} Undangan · ${sentPax}/${totalPax} Tamu)`;
     dom.progressBarFill.style.width = `${percentage}%`;
 
-    document.getElementById('countFilterAll').textContent = total;
-    document.getElementById('countFilterPending').textContent = pendingCount;
-    document.getElementById('countFilterSent').textContent = sentCount;
-    document.getElementById('countFilterHasPhone').textContent = withPhone;
-    document.getElementById('countFilterNoPhone').textContent = total - withPhone;
+    // Status filter counters
+    const countAllEl = document.getElementById('countFilterAll');
+    const countPendingEl = document.getElementById('countFilterPending');
+    const countSentEl = document.getElementById('countFilterSent');
+    const countHasPhoneEl = document.getElementById('countFilterHasPhone');
+    const countNoPhoneEl = document.getElementById('countFilterNoPhone');
+    if (countAllEl) countAllEl.textContent = total;
+    if (countPendingEl) countPendingEl.textContent = pendingCount;
+    if (countSentEl) countSentEl.textContent = sentCount;
+    if (countHasPhoneEl) countHasPhoneEl.textContent = withPhone;
+    if (countNoPhoneEl) countNoPhoneEl.textContent = total - withPhone;
+
+    // Pihak filter counters
+    const countSideAllEl = document.getElementById('countSideAll');
+    const countSideDhifaEl = document.getElementById('countSideDhifa');
+    const countSideRiefkyEl = document.getElementById('countSideRiefky');
+    if (countSideAllEl) countSideAllEl.textContent = total;
+    if (countSideDhifaEl) countSideDhifaEl.textContent = dhifaCount;
+    if (countSideRiefkyEl) countSideRiefkyEl.textContent = riefkyCount;
   }
 
   // ===========================================================================
@@ -1324,13 +1651,22 @@
     const sapaan = (row['Sapaan'] || '').trim();
     const isSent = isRowSent(row, index);
     const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+    const side = getGuestSide(row);
+    const note = getGuestNote(row);
+    const label = (row['Label'] || '').trim();
 
     dom.modalGuestTitle.textContent = `Pesan Undangan: ${name}`;
-    dom.modalGuestInfo.innerHTML = `
-      <span class="meta-chip">Undangan #${index + 1}</span>
-      <span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>
-      <span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>
-      <span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? 'Sudah Dikirim' : 'Belum Dikirim'}</span>`;
+
+    let modalMetaHtml = `<span class="meta-chip">Undangan #${index + 1}</span>`;
+    modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
+    if (side === 'dhifa') modalMetaHtml += `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
+    else if (side === 'riefky') modalMetaHtml += `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
+    if (label) modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
+    if (note) modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
+    modalMetaHtml += `<span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>`;
+    modalMetaHtml += `<span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? 'Sudah Dikirim' : 'Belum Dikirim'}</span>`;
+
+    dom.modalGuestInfo.innerHTML = modalMetaHtml;
 
     const formattedHtml = parseWhatsAppFormatting(compiledMsg);
     const now = new Date();
@@ -1418,19 +1754,7 @@
   function setupEventListeners() {
     const handleFileUpload = (file) => {
       if (!file) return;
-      if (state.rawRows.length > 0) {
-        showCustomConfirm({
-          title: 'Ganti Data Tamu Excel?',
-          message: `Mengunggah "${file.name}" akan menggantikan daftar tamu saat ini (${state.rawRows.length} undangan). Lanjutkan?`,
-          icon: 'file-spreadsheet',
-          theme: 'info',
-          confirmText: 'Ya, Ganti Data',
-          cancelText: 'Batal',
-          onConfirm: () => processExcelFile(file)
-        });
-      } else {
-        processExcelFile(file);
-      }
+      processExcelFile(file);
     };
 
     dom.fileInput.addEventListener('change', (e) => {
@@ -1451,19 +1775,7 @@
     });
 
     dom.btnReloadDefault.addEventListener('click', () => {
-      if (state.rawRows.length > 0) {
-        showCustomConfirm({
-          title: 'Muat Ulang Template Excel Bawaan?',
-          message: 'Data tamu saat ini akan digantikan dengan data Excel bawaan.',
-          icon: 'refresh-cw',
-          theme: 'info',
-          confirmText: 'Ya, Muat Ulang',
-          cancelText: 'Batal',
-          onConfirm: () => loadDefaultExcel()
-        });
-      } else {
-        loadDefaultExcel();
-      }
+      loadDefaultExcel();
     });
 
     dom.phoneColSelect.addEventListener('change', (e) => {
@@ -1600,6 +1912,45 @@
       });
     });
 
+    // Side / Pihak Filter tabs
+    if (dom.sideFilterGroup) {
+      dom.sideFilterGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.side-tab');
+        if (!btn) return;
+        dom.sideFilterGroup.querySelectorAll('.side-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.currentSideFilter = btn.dataset.side || 'all';
+        renderTable();
+      });
+    }
+
+    // Import Preview Modal listeners
+    if (dom.btnCloseImportModal) dom.btnCloseImportModal.addEventListener('click', closeImportPreviewModal);
+    if (dom.btnCancelImport) dom.btnCancelImport.addEventListener('click', closeImportPreviewModal);
+    if (dom.btnConfirmImport) {
+      dom.btnConfirmImport.addEventListener('click', async () => {
+        await confirmAndAppendNewGuests();
+      });
+    }
+    if (dom.importPreviewModal) {
+      dom.importPreviewModal.addEventListener('click', (e) => {
+        if (e.target === dom.importPreviewModal) closeImportPreviewModal();
+      });
+    }
+    if (dom.selectAllNewImport) {
+      dom.selectAllNewImport.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        pendingImportItems.forEach(item => {
+          if (!item.isDuplicate) {
+            item.selected = checked;
+          }
+        });
+        const checkboxes = dom.importPreviewTableBody.querySelectorAll('.import-checkbox:not(:disabled)');
+        checkboxes.forEach(chk => { chk.checked = checked; });
+        updateConfirmImportButton();
+      });
+    }
+
     // Custom confirm modal listeners
     if (dom.btnCancelConfirm) {
       dom.btnCancelConfirm.addEventListener('click', closeConfirmModal);
@@ -1636,6 +1987,8 @@
       if (e.key === 'Escape') {
         if (dom.customConfirmModal && dom.customConfirmModal.style.display === 'flex') {
           closeConfirmModal();
+        } else if (dom.importPreviewModal && dom.importPreviewModal.style.display === 'flex') {
+          closeImportPreviewModal();
         } else {
           closeModal();
         }
@@ -1689,11 +2042,11 @@
     // Load sent statuses
     await loadSentStatuses();
 
-    // Load guests: prefer Supabase, fall back to default Excel
+    // Load guests: prefer Supabase, fall back to default Excel directly
     try {
       const loadedFromDB = await loadGuestsFromSupabase();
       if (!loadedFromDB) {
-        await loadDefaultExcel();
+        await loadDefaultExcelDirectly();
       } else {
         updateLivePreview();
       }
