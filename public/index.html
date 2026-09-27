@@ -276,11 +276,47 @@
             </button>
           </div>
 
-          <!-- Pihak Filter Group (Dhifa vs Riefky) -->
-          <div class="side-filter-group" id="sideFilterGroup">
-            <button class="side-tab active" data-side="all">Semua Pihak<span>(<span id="countSideAll">0</span>)</span></button>
-            <button class="side-tab side-tab-dhifa" data-side="dhifa">🌸 Dhifa<span>(<span id="countSideDhifa">0</span>)</span></button>
-            <button class="side-tab side-tab-riefky" data-side="riefky">💼 Riefky<span>(<span id="countSideRiefky">0</span>)</span></button>
+          <!-- Notes / Pihak Filter Dropdown -->
+          <div class="dropdown-filter-container" id="sideDropdownContainer">
+            <button type="button" class="filter-dropdown-btn" id="btnSideFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter Catatan / Pihak">
+              <i data-lucide="filter" class="filter-icon" style="width: 14px; height: 14px;"></i>
+              <span id="sideFilterSelectedText">Filter: Semua</span>
+              <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
+            </button>
+            <div class="filter-dropdown-menu" id="sideFilterDropdownMenu" style="display: none;">
+              <button type="button" class="filter-dropdown-option active" data-side="all">
+                <span class="option-label">Semua</span>
+                <span class="option-count">(<span id="countSideAll">0</span>)</span>
+              </button>
+              <div class="dropdown-menu-divider"></div>
+              <div class="dropdown-section-title">Pihak Pengantin</div>
+              <button type="button" class="filter-dropdown-option" data-side="dhifa">
+                <span class="option-label">🌸 Dhifa</span>
+                <span class="option-count">(<span id="countSideDhifa">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-side="riefky">
+                <span class="option-label">💼 Riefky</span>
+                <span class="option-count">(<span id="countSideRiefky">0</span>)</span>
+              </button>
+              <div class="dropdown-menu-divider"></div>
+              <div class="dropdown-section-title">Keluarga</div>
+              <button type="button" class="filter-dropdown-option" data-side="abi">
+                <span class="option-label">🧔 Abi</span>
+                <span class="option-count">(<span id="countSideAbi">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-side="umi">
+                <span class="option-label">🧕 Umi</span>
+                <span class="option-count">(<span id="countSideUmi">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-side="papa">
+                <span class="option-label">👨 Papa</span>
+                <span class="option-count">(<span id="countSidePapa">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-side="mama">
+                <span class="option-label">👩 Mama</span>
+                <span class="option-count">(<span id="countSideMama">0</span>)</span>
+              </button>
+            </div>
           </div>
 
           <!-- Filter Pills -->

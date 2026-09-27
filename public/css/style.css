@@ -272,6 +272,10 @@ body {
   overflow: hidden;
 }
 
+.bottom-table-section .card {
+  overflow: visible;
+}
+
 .card-header {
   padding: 16px 20px;
   border-bottom: 1px solid var(--slate-200);
@@ -662,8 +666,7 @@ textarea#templateInput {
   align-items: center;
   gap: 12px;
   flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow: visible;
 }
 
 .search-wrapper {
@@ -721,11 +724,18 @@ textarea#templateInput {
   flex-shrink: 0;
 }
 
-.side-tab {
+/* Category / Notes Filter Dropdown */
+.dropdown-filter-container {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.filter-dropdown-btn {
   background: #FFFFFF;
   border: 1px solid var(--slate-300);
   color: var(--slate-700);
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
   font-size: 0.78rem;
   font-weight: 600;
@@ -733,46 +743,114 @@ textarea#templateInput {
   transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   user-select: none;
   white-space: nowrap;
 }
 
-.side-tab:hover {
+.filter-dropdown-btn:hover {
+  background: var(--slate-100);
+  color: var(--slate-900);
+  border-color: var(--slate-400);
+}
+
+.filter-dropdown-btn.has-filter {
+  background: var(--slate-900);
+  border-color: var(--slate-900);
+  color: #FFFFFF;
+}
+
+.filter-dropdown-btn .dropdown-arrow-icon {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.filter-dropdown-btn[aria-expanded="true"] .dropdown-arrow-icon {
+  transform: rotate(180deg);
+}
+
+.filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 215px;
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  padding: 6px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-dropdown-option {
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--slate-700);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.12s ease;
+  text-align: left;
+}
+
+.filter-dropdown-option:hover {
   background: var(--slate-100);
   color: var(--slate-900);
 }
 
-.side-tab.active {
-  background: var(--slate-800);
-  border-color: var(--slate-800);
-  color: #FFFFFF;
-}
-
-.side-tab.side-tab-dhifa:hover {
-  background: #FDF2F8;
-  border-color: #FBCFE8;
-  color: #9D174D;
-}
-
-.side-tab.side-tab-dhifa.active {
-  background: #DB2777;
-  border-color: #BE185D;
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.28);
-}
-
-.side-tab.side-tab-riefky:hover {
+.filter-dropdown-option.active {
   background: #EFF6FF;
-  border-color: #BFDBFE;
-  color: #1E40AF;
+  color: #1D4ED8;
+  font-weight: 700;
 }
 
-.side-tab.side-tab-riefky.active {
-  background: #2563EB;
-  border-color: #1D4ED8;
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+.filter-dropdown-option .option-count {
+  font-size: 0.74rem;
+  color: var(--slate-500);
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.filter-dropdown-option.active .option-count {
+  color: #2563EB;
+}
+
+.dropdown-menu-divider {
+  height: 1px;
+  background: var(--slate-200);
+  margin: 4px 6px;
+}
+
+.dropdown-section-title {
+  padding: 4px 10px 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slate-400);
 }
 
 .filter-group {
@@ -1001,6 +1079,30 @@ textarea#templateInput {
   background: #EFF6FF;
   border-color: #BFDBFE;
   color: #1D4ED8;
+}
+
+.meta-chip-abi {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #047857;
+}
+
+.meta-chip-umi {
+  background: #F5F3FF;
+  border-color: #DDD6FE;
+  color: #6D28D9;
+}
+
+.meta-chip-papa {
+  background: #EEF2FF;
+  border-color: #C7D2FE;
+  color: #4338CA;
+}
+
+.meta-chip-mama {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+  color: #B45309;
 }
 
 .meta-chip-note {

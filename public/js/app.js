@@ -54,7 +54,10 @@
     searchInput: document.getElementById('searchInput'),
     btnClearSearch: document.getElementById('btnClearSearch'),
     filterPills: document.getElementById('filterPills'),
-    sideFilterGroup: document.getElementById('sideFilterGroup'),
+    sideDropdownContainer: document.getElementById('sideDropdownContainer'),
+    btnSideFilterDropdown: document.getElementById('btnSideFilterDropdown'),
+    sideFilterDropdownMenu: document.getElementById('sideFilterDropdownMenu'),
+    sideFilterSelectedText: document.getElementById('sideFilterSelectedText'),
     btnMarkAllSent: document.getElementById('btnMarkAllSent'),
     btnResetAllSent: document.getElementById('btnResetAllSent'),
     recipientsTableBody: document.getElementById('recipientsTableBody'),
@@ -965,16 +968,11 @@
         tdName.innerHTML += `<div style="font-size:0.72rem;color:#b45309;margin-top:2px;">⚠️ ${escapeHtml(item.duplicateReason)}</div>`;
       }
 
-      // Pihak
+      // Pihak / Catatan
       const tdSide = document.createElement('td');
       tdSide.className = 'import-col-side';
-      if (item.side === 'dhifa') {
-        tdSide.innerHTML = `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
-      } else if (item.side === 'riefky') {
-        tdSide.innerHTML = `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
-      } else {
-        tdSide.innerHTML = `<span style="color:var(--slate-400);">-</span>`;
-      }
+      const importSideBadge = getSideBadgeHtml(item.side);
+      tdSide.innerHTML = importSideBadge || `<span style="color:var(--slate-400);">-</span>`;
 
       // Pax
       const tdPax = document.createElement('td');
@@ -1183,10 +1181,31 @@
 
   function getGuestSide(row) {
     if (!row) return null;
-    const raw = (row['Catatan'] || row['catatan'] || row['Notes'] || row['notes'] || row['Note'] || row['note'] || row['Keterangan'] || row['keterangan'] || row['Pihak'] || row['pihak'] || '').toString().trim().toLowerCase();
-    if (raw.includes('dhifa')) return 'dhifa';
-    if (raw.includes('riefky') || raw.includes('kiki')) return 'riefky';
+    const raw = (
+      row['Catatan'] || row['catatan'] || 
+      row['Notes'] || row['notes'] || 
+      row['Note'] || row['note'] || 
+      row['Keterangan'] || row['keterangan'] || 
+      row['Pihak'] || row['pihak'] || 
+      row['Label'] || row['label'] || ''
+    ).toString().trim();
+    if (/\b(dhifa)\b/i.test(raw)) return 'dhifa';
+    if (/\b(riefky|kiki)\b/i.test(raw)) return 'riefky';
+    if (/\b(abi)\b/i.test(raw)) return 'abi';
+    if (/\b(umi)\b/i.test(raw)) return 'umi';
+    if (/\b(papa)\b/i.test(raw)) return 'papa';
+    if (/\b(mama)\b/i.test(raw)) return 'mama';
     return null;
+  }
+
+  function getSideBadgeHtml(side) {
+    if (side === 'dhifa') return `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
+    if (side === 'riefky') return `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
+    if (side === 'abi') return `<span class="meta-chip meta-chip-abi">🧔 Abi</span>`;
+    if (side === 'umi') return `<span class="meta-chip meta-chip-umi">🧕 Umi</span>`;
+    if (side === 'papa') return `<span class="meta-chip meta-chip-papa">👨 Papa</span>`;
+    if (side === 'mama') return `<span class="meta-chip meta-chip-mama">👩 Mama</span>`;
+    return '';
   }
 
   function getGuestNote(row) {
@@ -1294,11 +1313,8 @@
       tdName.className = 'col-name';
       let chips = '';
       chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
-      if (side === 'dhifa') {
-        chips += `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
-      } else if (side === 'riefky') {
-        chips += `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
-      }
+      const sideBadge = getSideBadgeHtml(side);
+      if (sideBadge) chips += sideBadge;
       if (label && label !== '-' && label !== '--') chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
       tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div><div class="guest-meta-tags">${chips}</div></div>`;
 
@@ -1413,7 +1429,7 @@
           <div class="mobile-guest-drawer">
             <div class="mobile-drawer-inner">
               <div class="mobile-drawer-meta">
-                ${side ? `<div class="mobile-meta-item"><strong>Pihak:</strong> <span class="meta-chip ${side === 'dhifa' ? 'meta-chip-dhifa' : 'meta-chip-riefky'}">${side === 'dhifa' ? '🌸 Dhifa' : '💼 Riefky'}</span></div>` : ''}
+                ${side ? `<div class="mobile-meta-item"><strong>Pihak:</strong> ${getSideBadgeHtml(side)}</div>` : ''}
                 ${label ? `<div class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</div>` : ''}
                 ${note ? `<div class="mobile-meta-item"><strong>Catatan:</strong> ${escapeHtml(note)}</div>` : ''}
                 <div class="mobile-meta-item">
@@ -1562,9 +1578,8 @@
       const note = getGuestNote(row).toLowerCase();
       const guestSide = getGuestSide(row);
 
-      // 1. Pihak filter (Dhifa vs Riefky)
-      if (sideFilter === 'dhifa' && guestSide !== 'dhifa') return false;
-      if (sideFilter === 'riefky' && guestSide !== 'riefky') return false;
+      // 1. Pihak / Notes filter (Dhifa, Riefky, Abi, Umi, Papa, Mama)
+      if (sideFilter !== 'all' && guestSide !== sideFilter) return false;
 
       // 2. Status filter
       if (filter === 'pending' && isSent) return false;
@@ -1580,7 +1595,7 @@
     const total = state.rawRows.length;
     let withPhone = 0, sentCount = 0;
     let totalPax = 0, sentPax = 0, withPhonePax = 0;
-    let dhifaCount = 0, riefkyCount = 0;
+    let dhifaCount = 0, riefkyCount = 0, abiCount = 0, umiCount = 0, papaCount = 0, mamaCount = 0;
 
     state.rawRows.forEach((row, idx) => {
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
@@ -1599,6 +1614,10 @@
       const side = getGuestSide(row);
       if (side === 'dhifa') dhifaCount++;
       else if (side === 'riefky') riefkyCount++;
+      else if (side === 'abi') abiCount++;
+      else if (side === 'umi') umiCount++;
+      else if (side === 'papa') papaCount++;
+      else if (side === 'mama') mamaCount++;
     });
 
     const pendingCount = total - sentCount;
@@ -1628,13 +1647,21 @@
     if (countPendingEl) countPendingEl.textContent = pendingCount;
     if (countSentEl) countSentEl.textContent = sentCount;
 
-    // Pihak filter counters
+    // Pihak / Notes filter counters
     const countSideAllEl = document.getElementById('countSideAll');
     const countSideDhifaEl = document.getElementById('countSideDhifa');
     const countSideRiefkyEl = document.getElementById('countSideRiefky');
+    const countSideAbiEl = document.getElementById('countSideAbi');
+    const countSideUmiEl = document.getElementById('countSideUmi');
+    const countSidePapaEl = document.getElementById('countSidePapa');
+    const countSideMamaEl = document.getElementById('countSideMama');
     if (countSideAllEl) countSideAllEl.textContent = total;
     if (countSideDhifaEl) countSideDhifaEl.textContent = dhifaCount;
     if (countSideRiefkyEl) countSideRiefkyEl.textContent = riefkyCount;
+    if (countSideAbiEl) countSideAbiEl.textContent = abiCount;
+    if (countSideUmiEl) countSideUmiEl.textContent = umiCount;
+    if (countSidePapaEl) countSidePapaEl.textContent = papaCount;
+    if (countSideMamaEl) countSideMamaEl.textContent = mamaCount;
   }
 
   // ===========================================================================
@@ -1653,8 +1680,8 @@
 
     let modalMetaHtml = `<span class="meta-chip">Undangan #${index + 1}</span>`;
     modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
-    if (side === 'dhifa') modalMetaHtml += `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
-    else if (side === 'riefky') modalMetaHtml += `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
+    const sideBadge = getSideBadgeHtml(side);
+    if (sideBadge) modalMetaHtml += sideBadge;
     if (label && label !== '-' && label !== '--') modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
     if (note && note !== '-' && note !== '--') modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
     modalMetaHtml += `<span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>`;
@@ -1906,15 +1933,60 @@
       });
     });
 
-    // Side / Pihak Filter tabs
-    if (dom.sideFilterGroup) {
-      dom.sideFilterGroup.addEventListener('click', (e) => {
-        const btn = e.target.closest('.side-tab');
-        if (!btn) return;
-        dom.sideFilterGroup.querySelectorAll('.side-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.currentSideFilter = btn.dataset.side || 'all';
+    // Notes / Pihak Filter Dropdown
+    const SIDE_FILTER_LABELS = {
+      all: 'Filter: Semua',
+      dhifa: 'Filter: 🌸 Dhifa',
+      riefky: 'Filter: 💼 Riefky',
+      abi: 'Filter: 🧔 Abi',
+      umi: 'Filter: 🧕 Umi',
+      papa: 'Filter: 👨 Papa',
+      mama: 'Filter: 👩 Mama'
+    };
+
+    if (dom.btnSideFilterDropdown && dom.sideFilterDropdownMenu) {
+      dom.btnSideFilterDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = dom.sideFilterDropdownMenu.style.display === 'none';
+        dom.sideFilterDropdownMenu.style.display = isHidden ? 'flex' : 'none';
+        dom.btnSideFilterDropdown.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      });
+
+      dom.sideFilterDropdownMenu.addEventListener('click', (e) => {
+        const option = e.target.closest('.filter-dropdown-option');
+        if (!option) return;
+        const selectedSide = option.dataset.side || 'all';
+        state.currentSideFilter = selectedSide;
+
+        dom.sideFilterDropdownMenu.querySelectorAll('.filter-dropdown-option').forEach(opt => {
+          opt.classList.toggle('active', opt === option);
+        });
+
+        if (dom.sideFilterSelectedText) {
+          dom.sideFilterSelectedText.textContent = SIDE_FILTER_LABELS[selectedSide] || 'Filter: Semua';
+        }
+
+        if (dom.btnSideFilterDropdown) {
+          dom.btnSideFilterDropdown.classList.toggle('has-filter', selectedSide !== 'all');
+        }
+
+        dom.sideFilterDropdownMenu.style.display = 'none';
+        dom.btnSideFilterDropdown.setAttribute('aria-expanded', 'false');
         renderTable();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (dom.sideDropdownContainer && !dom.sideDropdownContainer.contains(e.target)) {
+          dom.sideFilterDropdownMenu.style.display = 'none';
+          if (dom.btnSideFilterDropdown) dom.btnSideFilterDropdown.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dom.sideFilterDropdownMenu.style.display !== 'none') {
+          dom.sideFilterDropdownMenu.style.display = 'none';
+          if (dom.btnSideFilterDropdown) dom.btnSideFilterDropdown.setAttribute('aria-expanded', 'false');
+        }
       });
     }
 
