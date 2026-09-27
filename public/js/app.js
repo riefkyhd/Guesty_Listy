@@ -1299,7 +1299,7 @@
       } else if (side === 'riefky') {
         chips += `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
       }
-      if (label) chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
+      if (label && label !== '-' && label !== '--') chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
       tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div><div class="guest-meta-tags">${chips}</div></div>`;
 
       const tdPhone = document.createElement('td');
@@ -1655,8 +1655,8 @@
     modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
     if (side === 'dhifa') modalMetaHtml += `<span class="meta-chip meta-chip-dhifa">🌸 Dhifa</span>`;
     else if (side === 'riefky') modalMetaHtml += `<span class="meta-chip meta-chip-riefky">💼 Riefky</span>`;
-    if (label) modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
-    if (note) modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
+    if (label && label !== '-' && label !== '--') modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
+    if (note && note !== '-' && note !== '--') modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
     modalMetaHtml += `<span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>`;
     modalMetaHtml += `<span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? 'Sudah Dikirim' : 'Belum Dikirim'}</span>`;
 
