@@ -794,6 +794,9 @@ textarea#templateInput {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .filter-tab:hover {
