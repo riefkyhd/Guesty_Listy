@@ -98,6 +98,9 @@
     // Sync indicator
     syncDot: document.getElementById('syncDot'),
     syncLabel: document.getElementById('syncLabel'),
+    mobileSyncBadge: document.getElementById('mobileSyncBadge'),
+    mobileSyncDot: document.getElementById('mobileSyncDot'),
+    mobileSyncLabel: document.getElementById('mobileSyncLabel'),
     footerSyncStatus: document.getElementById('footerSyncStatus')
   };
 
@@ -349,6 +352,8 @@
     const s = states[status] || states.disconnected;
     if (dom.syncDot) dom.syncDot.className = `sync-dot ${s.dot}`;
     if (dom.syncLabel) dom.syncLabel.textContent = s.label;
+    if (dom.mobileSyncDot) dom.mobileSyncDot.className = `sync-dot ${s.dot}`;
+    if (dom.mobileSyncLabel) dom.mobileSyncLabel.textContent = s.label;
     if (dom.footerSyncStatus) dom.footerSyncStatus.textContent = s.footer;
   }
 
@@ -431,36 +436,90 @@
     const key = getRowKey(row, index);
     if (isSent) { state.sentStatuses[key] = true; } else { delete state.sentStatuses[key]; }
     updateStatsAndProgress();
+    broadcastRealtimeEvent('status_updated', { guestKey: key, isSent });
     await persistSentStatus(key, isSent);
   }
 
   // ===========================================================================
-  // Supabase Realtime Subscription & Offline Fallback Polling
+  // Supabase Realtime Subscription & Multi-Device Sync
   // ===========================================================================
+  let realtimeChannel = null;
   let realtimePollingTimer = null;
+  let isSyncingFromCloud = false;
 
-  function startFallbackPolling() {
-    if (realtimePollingTimer) return;
+  function broadcastRealtimeEvent(event, payload = {}) {
+    if (realtimeChannel && typeof realtimeChannel.send === 'function') {
+      try {
+        realtimeChannel.send({
+          type: 'broadcast',
+          event: event,
+          payload: payload
+        });
+      } catch (err) {
+        console.warn('Realtime broadcast error:', err);
+      }
+    }
+  }
+
+  async function reloadGuestsAndStatusesFromCloud() {
+    if (isSyncingFromCloud) return;
+    isSyncingFromCloud = true;
+    try {
+      // 1. Fetch latest guests from cloud
+      const guestsRes = await apiGet('/api/guests');
+      const guests = guestsRes.guests;
+      if (Array.isArray(guests)) {
+        const newRows = guests.map(g => g.raw_data);
+        const currentJson = JSON.stringify(state.rawRows);
+        const newJson = JSON.stringify(newRows);
+        if (currentJson !== newJson) {
+          state.rawRows = newRows;
+          if (newRows.length > 0) {
+            state.columns = Object.keys(newRows[0] || {});
+            state.phoneColumn = detectPhoneColumn(state.columns);
+          }
+          if (state.selectedPreviewIndex >= state.rawRows.length) {
+            state.selectedPreviewIndex = Math.max(0, state.rawRows.length - 1);
+          }
+          if (state.expandedGuestIndex !== null && state.expandedGuestIndex >= state.rawRows.length) {
+            state.expandedGuestIndex = null;
+          }
+          updateFileStatusBar(null, state.rawRows.length);
+          populatePreviewGuestDropdown();
+          renderTable();
+          updateStatsAndProgress();
+          updateLivePreview();
+        }
+      }
+
+      // 2. Fetch latest sent statuses from cloud
+      const statusRes = await apiGet('/api/sent-status');
+      if (statusRes && statusRes.sentStatuses) {
+        const currentStatusesJson = JSON.stringify(state.sentStatuses);
+        const newStatusesJson = JSON.stringify(statusRes.sentStatuses);
+        if (currentStatusesJson !== newStatusesJson) {
+          state.sentStatuses = statusRes.sentStatuses;
+          updateStatsAndProgress();
+          renderTable();
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud sync error:', e);
+    } finally {
+      isSyncingFromCloud = false;
+    }
+  }
+
+  function startFallbackPolling(interval = 5000) {
+    if (realtimePollingTimer) {
+      clearInterval(realtimePollingTimer);
+      realtimePollingTimer = null;
+    }
     realtimePollingTimer = setInterval(async () => {
       try {
-        const cloudStatuses = await apiGet('/api/sent-status');
-        if (cloudStatuses && typeof cloudStatuses === 'object') {
-          let changed = false;
-          for (const k of Object.keys(cloudStatuses)) {
-            if (!state.sentStatuses[k]) {
-              state.sentStatuses[k] = true;
-              changed = true;
-            }
-          }
-          if (changed) {
-            updateStatsAndProgress();
-            renderTable();
-          }
-        }
-      } catch (e) {
-        // Silently handle
-      }
-    }, 20000);
+        await reloadGuestsAndStatusesFromCloud();
+      } catch (e) {}
+    }, interval);
   }
 
   function stopFallbackPolling() {
@@ -471,25 +530,84 @@
   }
 
   function setupRealtime() {
-    if (!supabaseClient) {
+    const sb = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+    if (!sb) {
       setSyncStatus('disconnected');
-      startFallbackPolling();
+      startFallbackPolling(5000);
       return;
     }
 
     setSyncStatus('connecting');
 
-    supabaseClient
-      .channel('sent-status-changes')
+    // Clean up existing channel if reconnecting
+    if (realtimeChannel) {
+      try { sb.removeChannel(realtimeChannel); } catch (e) {}
+      realtimeChannel = null;
+    }
+
+    realtimeChannel = sb.channel('guesty-realtime-sync', {
+      config: {
+        broadcast: { self: false }
+      }
+    });
+
+    // A. Listen for Instant Multi-Device Broadcast Events
+    realtimeChannel
+      .on('broadcast', { event: 'guest_list_updated' }, async () => {
+        await reloadGuestsAndStatusesFromCloud();
+      })
+      .on('broadcast', { event: 'status_updated' }, (msg) => {
+        const data = msg.payload || msg;
+        if (data && data.guestKey) {
+          if (data.isSent) {
+            state.sentStatuses[data.guestKey] = true;
+          } else {
+            delete state.sentStatuses[data.guestKey];
+          }
+          updateStatsAndProgress();
+          renderTable();
+        }
+      })
+      .on('broadcast', { event: 'bulk_status_updated' }, (msg) => {
+        const data = msg.payload || msg;
+        if (data && data.sentStatuses) {
+          state.sentStatuses = data.sentStatuses;
+          updateStatsAndProgress();
+          renderTable();
+        }
+      })
+      .on('broadcast', { event: 'template_updated' }, (msg) => {
+        const data = msg.payload || msg;
+        if (data && data.template && state.currentTemplate !== data.template) {
+          state.currentTemplate = data.template;
+          dom.templatePresetSelect.value = 'custom';
+          dom.templateInput.value = data.template;
+          updateCharCounter();
+          updateLivePreview();
+        }
+      });
+
+    // B. Listen for Postgres CDC Changes on guests table
+    realtimeChannel
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'guests'
+      }, async () => {
+        await reloadGuestsAndStatusesFromCloud();
+      });
+
+    // C. Listen for Postgres CDC Changes on sent_statuses table
+    realtimeChannel
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'sent_statuses'
       }, (payload) => {
         const { new: newRow, old: oldRow, eventType } = payload;
-        if (eventType === 'DELETE') {
+        if (eventType === 'DELETE' && oldRow?.guest_key) {
           delete state.sentStatuses[oldRow.guest_key];
-        } else if (newRow) {
+        } else if (newRow?.guest_key) {
           if (newRow.is_sent) {
             state.sentStatuses[newRow.guest_key] = true;
           } else {
@@ -498,16 +616,20 @@
         }
         updateStatsAndProgress();
         renderTable();
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setSyncStatus('live');
-          stopFallbackPolling();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          setSyncStatus('disconnected');
-          startFallbackPolling();
-        }
       });
+
+    // D. Channel status subscription
+    realtimeChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        setSyncStatus('live');
+        // Live websocket active: maintain 20s background safety poll
+        startFallbackPolling(20000);
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setSyncStatus('disconnected');
+        // WebSockets down: switch to 5s active polling
+        startFallbackPolling(5000);
+      }
+    });
   }
 
   // ===========================================================================
@@ -553,6 +675,7 @@
   async function saveGuestsToSupabase(rows) {
     try {
       await apiPost('/api/guests', { rows });
+      broadcastRealtimeEvent('guest_list_updated', { action: 'update', count: rows.length });
     } catch (e) {
       console.warn('Failed to save guests to Supabase', e);
     }
@@ -617,6 +740,10 @@
     } catch (e) {
       console.warn('Failed to sync guest deletion to cloud', e);
     }
+
+    // Broadcast updates to all other connected devices instantly
+    broadcastRealtimeEvent('guest_list_updated', { action: 'delete', name: guestName, count: state.rawRows.length });
+    broadcastRealtimeEvent('bulk_status_updated', { sentStatuses: state.sentStatuses });
 
     // Update UI components
     updateFileStatusBar(null, state.rawRows.length);
@@ -1436,9 +1563,15 @@
         cancelText: 'Batal',
         onConfirm: async () => {
           for (const { row, originalIndex } of filtered) {
-            await setRowSent(row, originalIndex, true);
+            const key = getRowKey(row, originalIndex);
+            state.sentStatuses[key] = true;
           }
           renderTable();
+          updateStatsAndProgress();
+          broadcastRealtimeEvent('bulk_status_updated', { sentStatuses: state.sentStatuses });
+          for (const { row, originalIndex } of filtered) {
+            await persistSentStatus(getRowKey(row, originalIndex), true);
+          }
           showToast(`${filtered.length} tamu ditandai Sudah Dikirim!`, 'success');
         }
       });
@@ -1453,14 +1586,15 @@
         confirmText: 'Ya, Reset Semua',
         cancelText: 'Batal',
         onConfirm: async () => {
+          state.sentStatuses = {};
+          renderTable();
+          updateStatsAndProgress();
+          broadcastRealtimeEvent('bulk_status_updated', { sentStatuses: {} });
           try {
             await apiDelete('/api/sent-status');
           } catch (e) {
             console.warn('Failed to reset on Supabase', e);
           }
-          state.sentStatuses = {};
-          renderTable();
-          updateStatsAndProgress();
           showToast('Semua status pengiriman berhasil di-reset.', 'success');
         }
       });
@@ -1506,6 +1640,26 @@
           closeModal();
         }
       }
+    });
+
+    // Auto-sync & reconnect when device wakes up or tab regains focus
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        const sb = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        if (!realtimeChannel || sb?.realtime?.connectionState() !== 'open') {
+          setupRealtime();
+        }
+        reloadGuestsAndStatusesFromCloud();
+      }
+    });
+
+    window.addEventListener('online', () => {
+      setupRealtime();
+      reloadGuestsAndStatusesFromCloud();
+    });
+
+    window.addEventListener('focus', () => {
+      reloadGuestsAndStatusesFromCloud();
     });
   }
 

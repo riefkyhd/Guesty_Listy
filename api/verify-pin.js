@@ -9,7 +9,7 @@ module.exports = function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { pin } = req.body || {};
-  const APP_PIN = process.env.APP_PIN || '1234';
+  const APP_PIN = process.env.APP_PIN || '36032';
 
   if (!pin) {
     return res.status(400).json({ ok: false, error: 'PIN required' });
