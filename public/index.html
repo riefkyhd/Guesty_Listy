@@ -73,9 +73,15 @@
           <h1 class="brand-title">Viding WA Generator</h1>
           <p class="brand-subtitle">Generator Link wa.me &amp; Template Pesan Undangan</p>
         </div>
-        <div class="mobile-sync-badge" id="mobileSyncBadge" title="Status sinkronisasi Realtime">
-          <span class="sync-dot" id="mobileSyncDot"></span>
-          <span id="mobileSyncLabel">Menghubungkan...</span>
+        <div class="header-right-badges">
+          <button type="button" id="btnOpenActivityLog" class="btn-activity-badge" title="Lihat Riwayat Aktivitas &amp; Info Device">
+            <i data-lucide="history"></i>
+            <span class="btn-activity-text">Riwayat</span>
+          </button>
+          <div class="mobile-sync-badge" id="mobileSyncBadge" title="Status sinkronisasi Realtime">
+            <span class="sync-dot" id="mobileSyncDot"></span>
+            <span id="mobileSyncLabel">Menghubungkan...</span>
+          </div>
         </div>
       </div>
 
@@ -131,11 +137,8 @@
           <div class="step-badge">1</div>
           <div class="header-text">
             <h2 class="card-title">Sumber Data Excel</h2>
-            <p class="card-subtitle">Pilih file undangan atau gunakan data bawaan</p>
+            <p class="card-subtitle">Pilih file undangan Excel (.xlsx / .xls)</p>
           </div>
-          <button id="btnReloadDefault" class="btn btn-outline btn-sm ml-auto" title="Muat Ulang File Default invitation_list_36032.xlsx">
-            <i data-lucide="refresh-cw"></i> Muat Template Bawaan
-          </button>
         </div>
 
         <div class="card-body">
@@ -159,10 +162,6 @@
                 <strong id="loadedFileName">-</strong>
                 <span id="loadedFileDetails" class="text-muted block-text">-</span>
               </div>
-            </div>
-            <div class="phone-select-wrapper">
-              <label for="phoneColSelect">Kolom WhatsApp:</label>
-              <select id="phoneColSelect" class="form-select"></select>
             </div>
           </div>
 
@@ -527,6 +526,47 @@
         <button id="btnConfirmImport" class="btn btn-primary">
           <i data-lucide="user-plus"></i> <span id="btnConfirmImportText">Konfirmasi Tambahkan</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Log Modal -->
+  <div id="activityLogModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box activity-modal-box">
+      <div class="modal-top">
+        <div class="modal-title-wrap">
+          <div class="activity-modal-badge"><i data-lucide="history"></i></div>
+          <div>
+            <h3 class="modal-title">Riwayat Aktivitas</h3>
+            <p class="modal-subtitle">Catatan perubahan status, template &amp; tamu beserta info perangkat</p>
+          </div>
+        </div>
+        <button type="button" id="btnCloseActivityLogModal" class="btn-close" title="Tutup Modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-content activity-modal-content">
+        <div class="activity-log-toolbar">
+          <span class="activity-count" id="activityLogCount">Memuat riwayat...</span>
+          <button type="button" id="btnRefreshActivityLog" class="btn-refresh-log" title="Muat Ulang Riwayat">
+            <i data-lucide="rotate-cw"></i> Segarkan
+          </button>
+        </div>
+
+        <div class="activity-log-list" id="activityLogList">
+          <!-- Dynamically populated activity log items -->
+        </div>
+
+        <div class="empty-state" id="activityLogEmpty" style="display: none;">
+          <div class="empty-icon-wrap"><i data-lucide="clock"></i></div>
+          <h3>Belum Ada Riwayat</h3>
+          <p>Aktivitas perubahan status, template, dan tamu akan tercatat otomatis di sini.</p>
+        </div>
+      </div>
+
+      <div class="modal-bottom">
+        <button type="button" id="btnCloseActivityLogBottom" class="btn btn-outline" style="width: 100%;">Tutup</button>
       </div>
     </div>
   </div>

@@ -43,6 +43,14 @@
     loadedFileName: document.getElementById('loadedFileName'),
     loadedFileDetails: document.getElementById('loadedFileDetails'),
     phoneColSelect: document.getElementById('phoneColSelect'),
+    btnOpenActivityLog: document.getElementById('btnOpenActivityLog'),
+    activityLogModal: document.getElementById('activityLogModal'),
+    btnCloseActivityLogModal: document.getElementById('btnCloseActivityLogModal'),
+    btnCloseActivityLogBottom: document.getElementById('btnCloseActivityLogBottom'),
+    btnRefreshActivityLog: document.getElementById('btnRefreshActivityLog'),
+    activityLogList: document.getElementById('activityLogList'),
+    activityLogCount: document.getElementById('activityLogCount'),
+    activityLogEmpty: document.getElementById('activityLogEmpty'),
     templatePresetSelect: document.getElementById('templatePresetSelect'),
     templateInput: document.getElementById('templateInput'),
     charCounter: document.getElementById('charCounter'),
@@ -461,12 +469,56 @@
     return !!state.sentStatuses[getRowKey(row, index)];
   }
 
+  function getGuestNameByKey(guestKey) {
+    if (!guestKey || !state.rawRows) return '';
+    for (let i = 0; i < state.rawRows.length; i++) {
+      if (getRowKey(state.rawRows[i], i) === guestKey) {
+        return (state.rawRows[i]['Nama'] || state.rawRows[i]['Name'] || '').trim();
+      }
+    }
+    return '';
+  }
+
+  function highlightRealtimeRow(guestKey) {
+    if (!guestKey) return;
+    try {
+      const elements = document.querySelectorAll(`[data-key="${CSS.escape(guestKey)}"]`);
+      elements.forEach(el => {
+        el.classList.remove('realtime-pulse-target');
+        void el.offsetWidth;
+        el.classList.add('realtime-pulse-target');
+        setTimeout(() => el.classList.remove('realtime-pulse-target'), 2600);
+      });
+    } catch (e) {
+      console.warn('Highlight failed:', e);
+    }
+  }
+
+  async function logActivity({ action, summary, details }) {
+    try {
+      await apiPost('/api/logs', {
+        action,
+        summary,
+        details: details || {}
+      });
+      broadcastRealtimeEvent('activity_logged', { action, summary });
+    } catch (err) {
+      console.warn('Failed to log activity:', err);
+    }
+  }
+
   async function setRowSent(row, index, isSent) {
     const key = getRowKey(row, index);
+    const guestName = (row['Nama'] || row['Name'] || 'Tamu').trim();
     if (isSent) { state.sentStatuses[key] = true; } else { delete state.sentStatuses[key]; }
     updateStatsAndProgress();
-    broadcastRealtimeEvent('status_updated', { guestKey: key, isSent });
+    broadcastRealtimeEvent('status_updated', { guestKey: key, isSent, guestName });
     await persistSentStatus(key, isSent);
+    logActivity({
+      action: isSent ? 'STATUS_SENT' : 'STATUS_PENDING',
+      summary: `"${guestName}" ditandai ${isSent ? 'Sudah Kirim' : 'Belum Kirim'}`,
+      details: { guestKey: key, guestName, isSent }
+    });
   }
 
   // ===========================================================================
@@ -584,6 +636,7 @@
     realtimeChannel
       .on('broadcast', { event: 'guest_list_updated' }, async () => {
         await reloadGuestsAndStatusesFromCloud();
+        showToast('👥 Daftar tamu diperbarui secara realtime', 'info');
       })
       .on('broadcast', { event: 'status_updated' }, (msg) => {
         const data = msg.payload || msg;
@@ -595,6 +648,9 @@
           }
           updateStatsAndProgress();
           renderTable();
+          const guestName = data.guestName || getGuestNameByKey(data.guestKey) || 'Tamu';
+          showToast(data.isSent ? `🟢 '${guestName}' ditandai Sudah Kirim` : `⏳ '${guestName}' diubah ke Belum Kirim`, 'success');
+          highlightRealtimeRow(data.guestKey);
         }
       })
       .on('broadcast', { event: 'bulk_status_updated' }, (msg) => {
@@ -603,6 +659,8 @@
           state.sentStatuses = data.sentStatuses;
           updateStatsAndProgress();
           renderTable();
+          const isReset = Object.keys(data.sentStatuses).length === 0;
+          showToast(isReset ? '🔄 Status pengiriman di-reset secara realtime' : '🟢 Status pengiriman diperbarui secara massal', 'success');
         }
       })
       .on('broadcast', { event: 'template_updated' }, (msg) => {
@@ -613,6 +671,12 @@
           dom.templateInput.value = data.template;
           updateCharCounter();
           updateLivePreview();
+          showToast('📝 Template pesan kustom diperbarui secara realtime', 'info');
+        }
+      })
+      .on('broadcast', { event: 'activity_logged' }, () => {
+        if (dom.activityLogModal && dom.activityLogModal.style.display !== 'none') {
+          loadActivityLogs();
         }
       });
 
@@ -645,6 +709,15 @@
         }
         updateStatsAndProgress();
         renderTable();
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'activity_logs'
+      }, () => {
+        if (dom.activityLogModal && dom.activityLogModal.style.display !== 'none') {
+          loadActivityLogs();
+        }
       });
 
     // D. Channel status subscription
@@ -773,6 +846,12 @@
     // Broadcast updates to all other connected devices instantly
     broadcastRealtimeEvent('guest_list_updated', { action: 'delete', name: guestName, count: state.rawRows.length });
     broadcastRealtimeEvent('bulk_status_updated', { sentStatuses: state.sentStatuses });
+
+    logActivity({
+      action: 'GUEST_DELETED',
+      summary: `Menghapus tamu "${guestName}" dari daftar undangan`,
+      details: { guestName }
+    });
 
     // Update UI components
     updateFileStatusBar(null, state.rawRows.length);
@@ -1064,6 +1143,12 @@
       added: newRows.length
     });
 
+    logActivity({
+      action: 'GUESTS_IMPORTED',
+      summary: `Menambahkan ${newRows.length} tamu baru dari file Excel`,
+      details: { count: newRows.length, fileName: pendingImportFilename }
+    });
+
     closeImportPreviewModal();
 
     // Re-render UI
@@ -1109,6 +1194,10 @@
   }
 
   function populatePhoneColSelector() {
+    if (!state.phoneColumn && state.columns.length > 0) {
+      state.phoneColumn = detectPhoneColumn(state.columns);
+    }
+    if (!dom.phoneColSelect) return;
     dom.phoneColSelect.innerHTML = '';
     state.columns.forEach(col => {
       const opt = document.createElement('option');
@@ -1292,6 +1381,7 @@
 
       // 1. Desktop Table Row
       const tr = document.createElement('tr');
+      tr.dataset.key = getRowKey(row, originalIndex);
       if (isSent) tr.classList.add('row-is-sent');
 
       const tdNo = document.createElement('td');
@@ -1410,6 +1500,7 @@
         const card = document.createElement('div');
         card.className = `mobile-guest-card ${isSent ? 'card-sent' : ''} ${isExpanded ? 'is-expanded' : ''}`;
         card.dataset.index = originalIndex;
+        card.dataset.key = getRowKey(row, originalIndex);
 
         card.innerHTML = `
           <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
@@ -1763,8 +1854,10 @@
 
   function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `toast ${type === 'danger' ? 'toast-danger' : ''}`;
-    const icon = type === 'danger' ? 'alert-triangle' : 'check-circle-2';
+    const isDanger = type === 'danger';
+    const isInfo = type === 'info';
+    toast.className = `toast ${isDanger ? 'toast-danger' : (isInfo ? 'toast-info' : '')}`;
+    const icon = isDanger ? 'alert-triangle' : (isInfo ? 'info' : 'check-circle-2');
     toast.innerHTML = `<i data-lucide="${icon}" style="width:16px;height:16px;"></i> <span>${escapeHtml(message)}</span>`;
     dom.toastContainer.appendChild(toast);
     setupLucideIcons();
@@ -1773,7 +1866,119 @@
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(10px)';
       setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
-    }, 2800);
+    }, 3200);
+  }
+
+  // ===========================================================================
+  // Activity Log Modal & Viewer
+  // ===========================================================================
+  function formatRelativeTime(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffSec = Math.floor((now - date) / 1000);
+    if (diffSec < 45) return 'Baru saja';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} mnt lalu`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} hari lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  }
+
+  function getActivityIconConfig(action) {
+    switch (action) {
+      case 'STATUS_SENT':
+        return { icon: 'check-circle-2', class: 'activity-icon-status-sent' };
+      case 'STATUS_PENDING':
+        return { icon: 'clock', class: 'activity-icon-status-pending' };
+      case 'STATUS_RESET':
+        return { icon: 'rotate-ccw', class: 'activity-icon-status-reset' };
+      case 'TEMPLATE_UPDATED':
+        return { icon: 'file-text', class: 'activity-icon-template' };
+      case 'GUESTS_IMPORTED':
+        return { icon: 'user-plus', class: 'activity-icon-upload' };
+      case 'GUEST_DELETED':
+        return { icon: 'trash-2', class: 'activity-icon-delete' };
+      default:
+        return { icon: 'activity', class: 'activity-icon-status-sent' };
+    }
+  }
+
+  async function loadActivityLogs() {
+    if (!dom.activityLogList) return;
+    if (dom.activityLogCount) dom.activityLogCount.textContent = 'Memuat riwayat...';
+    try {
+      const res = await apiGet('/api/logs?limit=50');
+      const logs = res.logs || [];
+      renderActivityLogs(logs);
+    } catch (err) {
+      console.warn('Failed to load activity logs:', err);
+      if (dom.activityLogCount) dom.activityLogCount.textContent = 'Gagal memuat riwayat';
+    }
+  }
+
+  function renderActivityLogs(logs) {
+    if (!dom.activityLogList) return;
+    dom.activityLogList.innerHTML = '';
+    if (!logs || logs.length === 0) {
+      if (dom.activityLogEmpty) dom.activityLogEmpty.style.display = 'block';
+      if (dom.activityLogCount) dom.activityLogCount.textContent = '0 aktivitas tercatat';
+      return;
+    }
+    if (dom.activityLogEmpty) dom.activityLogEmpty.style.display = 'none';
+    if (dom.activityLogCount) dom.activityLogCount.textContent = `Menampilkan ${logs.length} aktivitas terbaru`;
+
+    logs.forEach(log => {
+      const { icon, class: badgeClass } = getActivityIconConfig(log.action);
+      const timeStr = formatRelativeTime(log.created_at);
+      const device = log.device_info || 'Perangkat Tidak Dikenal';
+      const location = log.location || '';
+      const ip = log.ip_address || '';
+
+      const item = document.createElement('div');
+      item.className = 'activity-log-item';
+      item.innerHTML = `
+        <div class="activity-icon-badge ${badgeClass}">
+          <i data-lucide="${icon}" style="width:16px;height:16px;"></i>
+        </div>
+        <div class="activity-body">
+          <div class="activity-header-line">
+            <span class="activity-summary">${escapeHtml(log.summary)}</span>
+            <span class="activity-time">${escapeHtml(timeStr)}</span>
+          </div>
+          <div class="activity-meta-line">
+            <span class="activity-meta-pill" title="Perangkat & Browser">
+              <i data-lucide="smartphone"></i> ${escapeHtml(device)}
+            </span>
+            ${location && location !== 'Lokal / Tidak Terdeteksi' ? `
+              <span class="activity-meta-pill" title="Lokasi">
+                <i data-lucide="map-pin"></i> ${escapeHtml(location)}
+              </span>
+            ` : ''}
+            ${ip && ip !== '127.0.0.1' && ip !== '::1' ? `
+              <span class="activity-meta-pill" title="Alamat IP">
+                <i data-lucide="globe"></i> ${escapeHtml(ip)}
+              </span>
+            ` : ''}
+          </div>
+        </div>
+      `;
+      dom.activityLogList.appendChild(item);
+    });
+    setupLucideIcons();
+  }
+
+  function openActivityLogModal() {
+    if (!dom.activityLogModal) return;
+    dom.activityLogModal.style.display = 'flex';
+    loadActivityLogs();
+  }
+
+  function closeActivityLogModal() {
+    if (!dom.activityLogModal) return;
+    dom.activityLogModal.style.display = 'none';
   }
 
   function escapeHtml(str) {
@@ -1813,16 +2018,24 @@
       if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]);
     });
 
-    dom.btnReloadDefault.addEventListener('click', () => {
-      loadDefaultExcel();
-    });
-
-    dom.phoneColSelect.addEventListener('change', (e) => {
-      state.phoneColumn = e.target.value;
-      renderTable();
-      updateStatsAndProgress();
-      showToast(`Kolom WhatsApp: ${state.phoneColumn}`, 'success');
-    });
+    // Activity Log Modal Listeners
+    if (dom.btnOpenActivityLog) {
+      dom.btnOpenActivityLog.addEventListener('click', openActivityLogModal);
+    }
+    if (dom.btnCloseActivityLogModal) {
+      dom.btnCloseActivityLogModal.addEventListener('click', closeActivityLogModal);
+    }
+    if (dom.btnCloseActivityLogBottom) {
+      dom.btnCloseActivityLogBottom.addEventListener('click', closeActivityLogModal);
+    }
+    if (dom.btnRefreshActivityLog) {
+      dom.btnRefreshActivityLog.addEventListener('click', loadActivityLogs);
+    }
+    if (dom.activityLogModal) {
+      dom.activityLogModal.addEventListener('click', (e) => {
+        if (e.target === dom.activityLogModal) closeActivityLogModal();
+      });
+    }
 
     dom.templatePresetSelect.addEventListener('change', async (e) => {
       const key = e.target.value;
@@ -1850,6 +2063,11 @@
       await saveCustomTemplate(dom.templateInput.value);
       dom.templatePresetSelect.value = 'custom';
       showToast('Template kustom berhasil disimpan!', 'success');
+      logActivity({
+        action: 'TEMPLATE_UPDATED',
+        summary: 'Menyimpan perubahan template pesan WhatsApp',
+        details: {}
+      });
     });
 
     dom.btnResetTemplate.addEventListener('click', () => {
@@ -1868,6 +2086,11 @@
           updateLivePreview();
           renderTable();
           showToast('Template dikembalikan ke format Formal.', 'success');
+          logActivity({
+            action: 'TEMPLATE_UPDATED',
+            summary: 'Mereset template pesan ke format Formal bawaan',
+            details: {}
+          });
         }
       });
     });
@@ -1923,6 +2146,11 @@
           for (const { row, originalIndex } of filtered) {
             await persistSentStatus(getRowKey(row, originalIndex), true);
           }
+          logActivity({
+            action: 'STATUS_SENT',
+            summary: `Menandai ${filtered.length} tamu sebagai Sudah Dikirim`,
+            details: { count: filtered.length }
+          });
           showToast(`${filtered.length} tamu ditandai Sudah Dikirim!`, 'success');
         }
       });
@@ -1946,6 +2174,11 @@
           } catch (e) {
             console.warn('Failed to reset on Supabase', e);
           }
+          logActivity({
+            action: 'STATUS_RESET',
+            summary: 'Mereset semua status pengiriman ke Belum Kirim',
+            details: {}
+          });
           showToast('Semua status pengiriman berhasil di-reset.', 'success');
         }
       });
