@@ -1550,6 +1550,9 @@
                   <button type="button" class="btn btn-outline btn-sm btn-drawer-preview">
                     <i data-lucide="eye"></i> Preview
                   </button>
+                  <button type="button" class="btn btn-outline btn-sm btn-drawer-copy-msg">
+                    <i data-lucide="copy"></i> Salin Pesan
+                  </button>
                   <button type="button" class="btn btn-outline-danger btn-sm btn-drawer-delete">
                     <i data-lucide="trash-2"></i> Hapus
                   </button>
@@ -1589,6 +1592,14 @@
           e.stopPropagation();
           openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo);
         });
+
+        const btnCopyMsgMobile = card.querySelector('.btn-drawer-copy-msg');
+        if (btnCopyMsgMobile) {
+          btnCopyMsgMobile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyToClipboard(compiledMsg, `Teks undangan untuk ${guestName} disalin!`);
+          });
+        }
 
         const btnDeleteMobile = card.querySelector('.btn-drawer-delete');
         if (btnDeleteMobile) {
@@ -1784,6 +1795,7 @@
     const side = getGuestSide(row);
     const note = getGuestNote(row);
     const label = (row['Label'] || '').trim();
+    const link = (row['Link'] || row['link'] || row['Link Undangan'] || '').trim();
 
     dom.modalGuestTitle.textContent = `Pesan Undangan: ${name}`;
 
@@ -1804,11 +1816,31 @@
 
     dom.modalMessageContent.innerHTML = `<div class="wa-msg-text">${formattedHtml}</div><div class="wa-meta-time"><span>${timeStr}</span><span class="wa-ticks">✓✓</span></div>`;
 
-    dom.modalWaLinkInput.value = waUrl || '(Nomor WA tidak tersedia)';
-    dom.btnModalCopyLink.disabled = !phoneInfo.isValid;
-    dom.btnModalSendWa.disabled = !phoneInfo.isValid;
-    dom.btnModalCopyLink.onclick = () => copyToClipboard(waUrl, 'Link wa.me berhasil disalin!');
+    // Dynamic copy URL: prefer wa.me link if phone exists, else web invitation link
+    const copyUrl = (phoneInfo.isValid && waUrl) ? waUrl : link;
+    const labelEl = dom.modalWaLinkInput?.closest('.modal-input-group')?.querySelector('label');
+    if (labelEl) {
+      labelEl.textContent = (phoneInfo.isValid && waUrl) ? 'Link wa.me:' : 'Link Undangan:';
+    }
+
+    dom.modalWaLinkInput.value = copyUrl || '(Link tidak tersedia)';
+    dom.btnModalCopyLink.disabled = !copyUrl;
+    dom.btnModalCopyLink.onclick = () => {
+      if (!copyUrl) return;
+      const copyMsg = (phoneInfo.isValid && waUrl) ? 'Link wa.me berhasil disalin!' : 'Link undangan berhasil disalin!';
+      copyToClipboard(copyUrl, copyMsg);
+    };
+
     dom.btnModalCopyText.onclick = () => copyToClipboard(compiledMsg, 'Teks pesan berhasil disalin!');
+
+    if (!phoneInfo.isValid) {
+      dom.btnModalSendWa.disabled = true;
+      dom.btnModalSendWa.innerHTML = '<i data-lucide="phone-off"></i> Tanpa Nomor WhatsApp';
+    } else {
+      dom.btnModalSendWa.disabled = false;
+      dom.btnModalSendWa.innerHTML = '<i data-lucide="send"></i> Buka di WhatsApp';
+    }
+
     if (dom.btnModalDeleteGuest) {
       dom.btnModalDeleteGuest.onclick = () => {
         closeModal();
@@ -1845,10 +1877,22 @@
   function fallbackCopy(text, successMsg) {
     const ta = document.createElement('textarea');
     ta.value = text;
-    ta.style.cssText = 'position:fixed;opacity:0;';
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
     document.body.appendChild(ta);
+    ta.focus();
     ta.select();
-    try { document.execCommand('copy'); showToast(successMsg, 'success'); } catch { showToast('Gagal menyalin teks.', 'danger'); }
+    ta.setSelectionRange(0, 99999);
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        showToast(successMsg, 'success');
+      } else {
+        showToast('Gagal menyalin teks.', 'danger');
+      }
+    } catch {
+      showToast('Gagal menyalin teks.', 'danger');
+    }
     document.body.removeChild(ta);
   }
 

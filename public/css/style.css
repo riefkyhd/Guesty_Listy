@@ -1573,9 +1573,25 @@ textarea#templateInput {
   line-height: 1.25;
   text-decoration: none;
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
-.btn:active {
+.btn:disabled,
+.btn.btn-disabled,
+.btn[disabled] {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  background: var(--slate-200) !important;
+  border-color: var(--slate-300) !important;
+  color: var(--slate-400) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
@@ -1744,6 +1760,9 @@ textarea#templateInput {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--slate-200);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .modal-top {
@@ -1752,6 +1771,8 @@ textarea#templateInput {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .modal-heading {
@@ -1759,6 +1780,8 @@ textarea#templateInput {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--slate-900);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .modal-close-btn {
@@ -1787,6 +1810,8 @@ textarea#templateInput {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .modal-bubble {
@@ -1799,18 +1824,24 @@ textarea#templateInput {
   font-size: 0.88rem;
   border-left: 3px solid #16A34A;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-input-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .modal-input-group label {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--slate-700);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .input-with-button {
@@ -1827,6 +1858,8 @@ textarea#templateInput {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--slate-800);
+  user-select: all;
+  -webkit-user-select: all;
   outline: none;
 }
 
@@ -2070,20 +2103,6 @@ textarea#templateInput {
   color: var(--wa-green);
 }
 
-.mobile-sync-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  background: var(--slate-100);
-  border: 1px solid var(--slate-200);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--slate-600);
-  flex-shrink: 0;
-}
-
 @media (max-width: 768px) {
   .brand-group {
     display: flex;
@@ -2092,17 +2111,13 @@ textarea#templateInput {
   }
 
   .header-right-badges {
+    margin-left: auto;
     gap: 6px;
   }
 
   .btn-activity-badge {
     padding: 3px 8px;
     font-size: 0.68rem;
-  }
-
-  .mobile-sync-badge {
-    padding: 3px 7px;
-    font-size: 0.65rem;
   }
 }
 
@@ -2489,6 +2504,8 @@ textarea#templateInput {
   margin-bottom: 16px;
   max-height: 480px;
   overflow-y: auto;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .wa-chat-bubble-container {
@@ -2508,6 +2525,8 @@ textarea#templateInput {
   font-size: 0.92rem;
   line-height: 1.45;
   word-break: break-word;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .wa-modal-bubble::after {
@@ -2818,8 +2837,15 @@ textarea#templateInput {
 
 .mobile-drawer-actions-secondary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.mobile-drawer-actions-secondary .btn {
+  padding: 6px 4px;
+  font-size: 0.72rem;
+  gap: 4px;
+  min-height: 36px;
 }
 
 .mobile-drawer-actions .btn {
@@ -2827,7 +2853,7 @@ textarea#templateInput {
   justify-content: center;
   font-size: var(--type-body-sm);
   padding: 8px 12px;
-  min-height: 40px;
+  min-height: 38px;
 }
 
 /* Mobile Config Toggle Bar (Hidden on desktop) */
@@ -2840,28 +2866,46 @@ textarea#templateInput {
    ========================================================================== */
 @media (max-width: 768px) {
   .page-container {
-    padding: 12px 12px 40px;
+    padding: 10px 10px 40px;
   }
 
   .nav-container {
-    padding: 10px 12px;
+    padding: 8px 12px;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
   }
 
   .brand-group {
     justify-content: flex-start;
     align-items: center;
+    gap: 10px;
+    width: 100%;
   }
 
   .brand-avatar {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     aspect-ratio: 1 / 1;
     flex-shrink: 0;
     align-self: center;
-    border-radius: 12px;
+    border-radius: 10px;
+  }
+
+  .brand-title {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .brand-subtitle {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  .mobile-guest-row-header {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   /* Compact 1-Row 3-Metric Header Bar on Mobile */
