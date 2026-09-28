@@ -139,9 +139,11 @@ body {
 .brand-avatar {
   width: 44px;
   height: 44px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   background: linear-gradient(135deg, #16A34A, #15803D);
   color: #FFFFFF;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -665,7 +667,7 @@ textarea#templateInput {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: visible;
 }
 
@@ -2804,6 +2806,16 @@ textarea#templateInput {
 
   .brand-group {
     justify-content: flex-start;
+    align-items: center;
+  }
+
+  .brand-avatar {
+    width: 42px;
+    height: 42px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+    align-self: center;
+    border-radius: 12px;
   }
 
   /* Compact 1-Row 3-Metric Header Bar on Mobile */
@@ -3021,7 +3033,11 @@ textarea#templateInput {
   }
 
   .search-wrapper {
+    flex: none;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
   }
 
   .search-wrapper input {
@@ -3054,14 +3070,29 @@ textarea#templateInput {
 
   .bulk-tools {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     width: 100%;
+    margin-left: 0;
+    box-sizing: border-box;
   }
 
   .bulk-tools .btn {
     width: 100%;
+    min-width: 0;
     justify-content: center;
+    padding: 8px 8px;
+    font-size: 0.76rem;
+    box-sizing: border-box;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .bulk-tools .btn i {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
   }
 
   /* Hide Desktop Table, Show Native Mobile Cards */
