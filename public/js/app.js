@@ -2798,6 +2798,7 @@
       if (debounceRenderTableTimer) clearTimeout(debounceRenderTableTimer);
       debounceRenderTableTimer = setTimeout(() => {
         renderTable();
+        updateStatsAndProgress();
       }, delay);
     }
 
@@ -2860,6 +2861,7 @@
       state.searchQuery = '';
       dom.btnClearSearch.style.display = 'none';
       renderTable();
+      updateStatsAndProgress();
     });
 
     dom.filterPills.addEventListener('click', (e) => {
@@ -2869,6 +2871,7 @@
       btn.classList.add('active');
       state.currentFilter = btn.dataset.filter;
       renderTable();
+      updateStatsAndProgress();
     });
 
     dom.btnMarkAllSent.addEventListener('click', () => {
@@ -2973,6 +2976,7 @@
         dom.sideFilterDropdownMenu.style.display = 'none';
         dom.btnSideFilterDropdown.setAttribute('aria-expanded', 'false');
         renderTable();
+        updateStatsAndProgress();
       });
 
       document.addEventListener('click', (e) => {
