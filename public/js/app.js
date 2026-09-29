@@ -1362,7 +1362,8 @@
   }
 
   function generateWaUrl(phone, msg) {
-    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    const cleanMsg = (msg || '').replace(/\r\n/g, '\n');
+    return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(cleanMsg)}`;
   }
 
   function getGuestSide(row) {
@@ -1554,7 +1555,7 @@
       if (!phoneInfo.isValid) {
         btnCopyLink.classList.add('btn-action-disabled');
       } else {
-        btnCopyLink.addEventListener('click', () => copyToClipboard(waUrl, `Link wa.me untuk ${guestName} berhasil disalin!`));
+        btnCopyLink.addEventListener('click', () => copyToClipboard(waUrl, `Link WhatsApp untuk ${guestName} berhasil disalin!`));
       }
 
       const btnCopyMsg = document.createElement('button');
@@ -1966,18 +1967,18 @@
 
     dom.modalMessageContent.innerHTML = `<div class="wa-msg-text">${formattedHtml}</div><div class="wa-meta-time"><span>${timeStr}</span><span class="wa-ticks">✓✓</span></div>`;
 
-    // Dynamic copy URL: prefer wa.me link if phone exists, else web invitation link
+    // Dynamic copy URL: prefer WhatsApp link if phone exists, else web invitation link
     const copyUrl = (phoneInfo.isValid && waUrl) ? waUrl : link;
     const labelEl = dom.modalWaLinkInput?.closest('.modal-input-group')?.querySelector('label');
     if (labelEl) {
-      labelEl.textContent = (phoneInfo.isValid && waUrl) ? 'Link wa.me:' : 'Link Undangan:';
+      labelEl.textContent = (phoneInfo.isValid && waUrl) ? 'Link WhatsApp:' : 'Link Undangan:';
     }
 
     dom.modalWaLinkInput.value = copyUrl || '(Link tidak tersedia)';
     dom.btnModalCopyLink.disabled = !copyUrl;
     dom.btnModalCopyLink.onclick = () => {
       if (!copyUrl) return;
-      const copyMsg = (phoneInfo.isValid && waUrl) ? 'Link wa.me berhasil disalin!' : 'Link undangan berhasil disalin!';
+      const copyMsg = (phoneInfo.isValid && waUrl) ? 'Link WhatsApp berhasil disalin!' : 'Link undangan berhasil disalin!';
       copyToClipboard(copyUrl, copyMsg);
     };
 
