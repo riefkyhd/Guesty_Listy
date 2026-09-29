@@ -93,6 +93,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -1569,13 +1570,15 @@ textarea#templateInput {
   border-radius: 9999px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.25;
   text-decoration: none;
   white-space: nowrap;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  overflow: hidden;
+  position: relative;
 }
 
 .btn:disabled,
@@ -1592,7 +1595,8 @@ textarea#templateInput {
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
+  filter: brightness(0.93);
 }
 
 .btn-sm {
@@ -1713,12 +1717,16 @@ textarea#templateInput {
   font-size: 0.84rem;
   font-weight: 600;
   border-left: 4px solid #16A34A;
-  animation: toastIn 0.25s ease-out forwards;
+  animation: toastIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: auto;
 }
 
 .toast.toast-danger {
   border-left-color: #EF4444;
+}
+
+.toast.toast-closing {
+  animation: toastOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards !important;
 }
 
 @keyframes toastIn {
@@ -1729,6 +1737,17 @@ textarea#templateInput {
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes toastOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(20px);
+    opacity: 0;
   }
 }
 
@@ -1743,11 +1762,17 @@ textarea#templateInput {
   height: 100vh;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
   padding: 20px;
+  animation: overlayFadeIn 0.22s ease-out forwards;
+}
+
+.modal-overlay.is-closing {
+  animation: overlayFadeOut 0.2s ease-in forwards;
 }
 
 .modal-box {
@@ -1763,6 +1788,45 @@ textarea#templateInput {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  animation: modalSlideUpIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-overlay.is-closing .modal-box,
+.modal-overlay.is-closing .import-modal-box,
+.modal-overlay.is-closing .activity-modal-box {
+  animation: modalSlideDownOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modalSlideUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalSlideDownOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
 }
 
 .modal-top {
@@ -2135,7 +2199,11 @@ textarea#templateInput {
   justify-content: center;
   z-index: 10000;
   padding: 20px;
-  animation: fadeIn 0.2s ease-out;
+  animation: overlayFadeIn 0.22s ease-out forwards;
+}
+
+.confirm-modal-overlay.is-closing {
+  animation: overlayFadeOut 0.2s ease-in forwards;
 }
 
 .confirm-modal-box {
@@ -2146,7 +2214,11 @@ textarea#templateInput {
   padding: 28px 24px 24px;
   text-align: center;
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
-  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalSlideUpIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.confirm-modal-overlay.is-closing .confirm-modal-box {
+  animation: modalSlideDownOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .confirm-modal-icon-wrap {
@@ -2750,6 +2822,13 @@ textarea#templateInput {
   white-space: nowrap;
   transition: all 0.15s ease;
   min-height: 28px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.mobile-status-pill:active {
+  transform: scale(0.94);
+  filter: brightness(0.92);
 }
 
 .mobile-status-pill.status-pending {
@@ -3209,7 +3288,13 @@ textarea#templateInput {
     max-width: 100%;
     border-radius: 24px 24px 0 0;
     max-height: 90vh;
-    animation: bottomSheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: bottomSheetIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .modal-overlay.is-closing .modal-box,
+  .modal-overlay.is-closing .import-modal-box,
+  .modal-overlay.is-closing .activity-modal-box {
+    animation: bottomSheetOut 0.22s cubic-bezier(0.4, 0, 0.9, 1) forwards !important;
   }
 
   .modal-top {
@@ -3254,7 +3339,11 @@ textarea#templateInput {
     margin: 0;
     padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 16px));
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.28);
-    animation: bottomSheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: bottomSheetIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .confirm-modal-overlay.is-closing .confirm-modal-box {
+    animation: bottomSheetOut 0.22s cubic-bezier(0.4, 0, 0.9, 1) forwards !important;
   }
 
   .confirm-modal-box::before {
@@ -3309,6 +3398,17 @@ textarea#templateInput {
     }
   }
 
+  @keyframes bottomSheetOut {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(100%);
+      opacity: 0.8;
+    }
+  }
+
   /* Floating Pill Toast Shelf on Mobile */
   .toast-shelf {
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -3347,6 +3447,10 @@ textarea#templateInput {
     border-color: rgba(255, 255, 255, 0.3);
   }
 
+  .toast.toast-closing {
+    animation: mobileToastOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  }
+
   @keyframes mobileToastIn {
     from {
       transform: translateY(20px) scale(0.95);
@@ -3355,6 +3459,17 @@ textarea#templateInput {
     to {
       transform: translateY(0) scale(1);
       opacity: 1;
+    }
+  }
+
+  @keyframes mobileToastOut {
+    from {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(20px) scale(0.95);
+      opacity: 0;
     }
   }
 

@@ -327,9 +327,21 @@
     dom.customConfirmModal.style.display = 'flex';
   }
 
+  function closeModalWithAnimation(modalOverlayEl, callback) {
+    if (!modalOverlayEl || modalOverlayEl.style.display === 'none') return;
+    modalOverlayEl.classList.add('is-closing');
+    setTimeout(() => {
+      modalOverlayEl.style.display = 'none';
+      modalOverlayEl.classList.remove('is-closing');
+      if (typeof callback === 'function') callback();
+    }, 220);
+  }
+
   function closeConfirmModal() {
-    if (dom.customConfirmModal) dom.customConfirmModal.style.display = 'none';
-    pendingConfirmAction = null;
+    if (!dom.customConfirmModal) return;
+    closeModalWithAnimation(dom.customConfirmModal, () => {
+      pendingConfirmAction = null;
+    });
   }
 
   // ===========================================================================
@@ -1104,9 +1116,11 @@
   }
 
   function closeImportPreviewModal() {
-    dom.importPreviewModal.style.display = 'none';
-    pendingImportItems = [];
-    if (dom.fileInput) dom.fileInput.value = '';
+    if (!dom.importPreviewModal) return;
+    closeModalWithAnimation(dom.importPreviewModal, () => {
+      pendingImportItems = [];
+      if (dom.fileInput) dom.fileInput.value = '';
+    });
   }
 
   async function confirmAndAppendNewGuests() {
@@ -1311,6 +1325,16 @@
     return (row['Catatan'] || row['catatan'] || row['Notes'] || row['notes'] || row['Note'] || row['note'] || row['Keterangan'] || row['keterangan'] || '').toString().trim();
   }
 
+  function isNoteRedundantWithSide(note, side) {
+    if (!note) return true;
+    const n = note.trim().toLowerCase();
+    const s = (side || '').trim().toLowerCase();
+    if (n === '-' || n === '--') return true;
+    if (n === s) return true;
+    if (/^(dhifa|riefky|kiki|abi|umi|papa|mama)$/i.test(n)) return true;
+    return false;
+  }
+
   // ===========================================================================
   // Live Preview
   // ===========================================================================
@@ -1504,6 +1528,10 @@
 
         card.innerHTML = `
           <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
+            <button type="button" class="mobile-status-pill ${isSent ? 'status-sent' : 'status-pending'}" title="Klik untuk ubah status kirim">
+              <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:11px;height:11px;"></i>
+              <span>${isSent ? 'Terkirim' : 'Belum'}</span>
+            </button>
             <div class="mobile-guest-header-main">
               <div class="mobile-guest-title-row">
                 <span class="mobile-guest-num">#${originalIndex + 1}</span>
@@ -1516,10 +1544,6 @@
               </div>
             </div>
             <div class="mobile-guest-header-actions">
-              <button type="button" class="mobile-status-pill ${isSent ? 'status-sent' : 'status-pending'}" title="Klik untuk ubah status kirim">
-                <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:11px;height:11px;"></i>
-                <span>${isSent ? 'Terkirim' : 'Belum'}</span>
-              </button>
               <span class="mobile-chevron-wrap">
                 <i data-lucide="chevron-down" class="mobile-chevron-icon" style="width:16px;height:16px;"></i>
               </span>
@@ -1531,7 +1555,7 @@
               <div class="mobile-drawer-meta">
                 ${side ? `<div class="mobile-meta-item"><strong>Pihak:</strong> ${getSideBadgeHtml(side)}</div>` : ''}
                 ${label ? `<div class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</div>` : ''}
-                ${note ? `<div class="mobile-meta-item"><strong>Catatan:</strong> ${escapeHtml(note)}</div>` : ''}
+                ${(note && !isNoteRedundantWithSide(note, side)) ? `<div class="mobile-meta-item"><strong>Catatan:</strong> ${escapeHtml(note)}</div>` : ''}
                 <div class="mobile-meta-item">
                   <strong>Nomor WA:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">Tanpa WhatsApp</em>'}
                 </div>
@@ -1804,7 +1828,7 @@
     const sideBadge = getSideBadgeHtml(side);
     if (sideBadge) modalMetaHtml += sideBadge;
     if (label && label !== '-' && label !== '--') modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
-    if (note && note !== '-' && note !== '--') modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
+    if (note && !isNoteRedundantWithSide(note, side)) modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
     modalMetaHtml += `<span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>`;
     modalMetaHtml += `<span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? 'Sudah Dikirim' : 'Belum Dikirim'}</span>`;
 
@@ -1860,7 +1884,10 @@
     setupLucideIcons();
   }
 
-  function closeModal() { dom.previewModal.style.display = 'none'; }
+  function closeModal() {
+    if (!dom.previewModal) return;
+    closeModalWithAnimation(dom.previewModal);
+  }
 
   // ===========================================================================
   // Clipboard & Toast
@@ -1906,10 +1933,8 @@
     dom.toastContainer.appendChild(toast);
     setupLucideIcons();
     setTimeout(() => {
-      toast.style.transition = 'opacity 0.25s, transform 0.25s';
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(10px)';
-      setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
+      toast.classList.add('toast-closing');
+      setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 220);
     }, 3200);
   }
 
@@ -2022,7 +2047,7 @@
 
   function closeActivityLogModal() {
     if (!dom.activityLogModal) return;
-    dom.activityLogModal.style.display = 'none';
+    closeModalWithAnimation(dom.activityLogModal);
   }
 
   function escapeHtml(str) {
@@ -2096,11 +2121,19 @@
       showToast('Template diganti!', 'success');
     });
 
+    let debounceRenderTableTimer = null;
+    function debouncedRenderTable(delay = 250) {
+      if (debounceRenderTableTimer) clearTimeout(debounceRenderTableTimer);
+      debounceRenderTableTimer = setTimeout(() => {
+        renderTable();
+      }, delay);
+    }
+
     dom.templateInput.addEventListener('input', (e) => {
       state.currentTemplate = e.target.value;
       updateCharCounter();
       updateLivePreview();
-      renderTable();
+      debouncedRenderTable(250);
     });
 
     dom.btnSaveCustomTemplate.addEventListener('click', async () => {
@@ -2147,7 +2180,7 @@
     dom.searchInput.addEventListener('input', (e) => {
       state.searchQuery = e.target.value;
       dom.btnClearSearch.style.display = state.searchQuery ? 'block' : 'none';
-      renderTable();
+      debouncedRenderTable(150);
     });
 
     dom.btnClearSearch.addEventListener('click', () => {
