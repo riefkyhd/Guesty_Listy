@@ -739,7 +739,7 @@ textarea#templateInput {
   border: 1px solid var(--slate-300);
   color: var(--slate-700);
   padding: 6px 14px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -869,7 +869,7 @@ textarea#templateInput {
   border: 1px solid var(--slate-300);
   color: var(--slate-600);
   padding: 6px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -1174,7 +1174,7 @@ textarea#templateInput {
   color: #FFFFFF;
   border: 1px solid #15803D;
   padding: 6px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: 0.78rem;
   font-weight: 700;
   display: inline-flex;
@@ -1197,7 +1197,7 @@ textarea#templateInput {
   border: 1px solid #86EFAC;
   color: #15803D;
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: 0.78rem;
   font-weight: 600;
   display: inline-flex;
@@ -1219,7 +1219,7 @@ textarea#templateInput {
   border: 1px solid var(--slate-300);
   color: var(--slate-800);
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: 0.78rem;
   font-weight: 600;
   display: inline-flex;
@@ -1241,7 +1241,7 @@ textarea#templateInput {
   border: 1px solid var(--slate-300);
   color: var(--slate-600);
   padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1259,7 +1259,7 @@ textarea#templateInput {
   border: 1px solid var(--slate-300);
   color: var(--slate-500);
   padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1567,7 +1567,7 @@ textarea#templateInput {
   font-weight: 600;
   font-size: 0.875rem;
   padding: 10px 20px;
-  border-radius: 9999px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1740,7 +1740,7 @@ textarea#templateInput {
   background: rgba(255, 255, 255, 0.22);
   color: #FFFFFF;
   border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 9999px;
+  border-radius: var(--radius-sm);
   padding: 4px 11px;
   font-size: 0.74rem;
   font-weight: 700;
@@ -2178,7 +2178,7 @@ textarea#templateInput {
   align-items: center;
   gap: 5px;
   padding: 5px 11px;
-  border-radius: 9999px;
+  border-radius: var(--radius-md);
   background: #FFFFFF;
   border: 1px solid var(--slate-300);
   font-size: 0.74rem;
@@ -2978,6 +2978,7 @@ textarea#templateInput {
   font-size: var(--type-body-sm);
   padding: 10px 14px;
   min-height: 44px;
+  border-radius: var(--radius-md);
 }
 
 .mobile-drawer-actions-secondary {
@@ -2992,6 +2993,7 @@ textarea#templateInput {
   gap: 4px;
   min-height: 44px;
   justify-content: center;
+  border-radius: var(--radius-md);
 }
 
 /* Mobile Config Toggle Bar (Hidden on desktop) */
@@ -3482,7 +3484,7 @@ textarea#templateInput {
   }
 
   .toast {
-    border-radius: 9999px;
+    border-radius: var(--radius-md);
     padding: 10px 20px;
     font-size: 0.82rem;
     font-weight: 600;
