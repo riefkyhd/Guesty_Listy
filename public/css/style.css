@@ -1419,10 +1419,36 @@ textarea#templateInput {
   border-radius: 4px;
 }
 
+/* Override shimmer colours inside the green WhatsApp bubble */
+.preview-skeleton-wrap .shimmer {
+  background: linear-gradient(
+    90deg,
+    #C6EFCA 0%,
+    #C6EFCA 25%,
+    #DFF5E0 50%,
+    #C6EFCA 75%,
+    #C6EFCA 100%
+  );
+  background-size: 200% 100%;
+}
+
 .preview-skeleton-meta {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+}
+
+/* Override shimmer for the meta timestamp pill too */
+.preview-skeleton-meta .shimmer {
+  background: linear-gradient(
+    90deg,
+    #B8E8BC 0%,
+    #B8E8BC 25%,
+    #D4F1D6 50%,
+    #B8E8BC 75%,
+    #B8E8BC 100%
+  );
+  background-size: 200% 100%;
 }
 
 /* Skeleton: Table Rows (Desktop) */
