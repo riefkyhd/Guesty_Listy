@@ -940,6 +940,69 @@
   let pendingImportItems = [];
   let pendingImportFilename = '';
 
+  function extractGuestIdentity(row, phoneCol) {
+    const rawName = (row['Nama'] || row['Name'] || '').toString().trim();
+    const lowerName = rawName.toLowerCase();
+
+    // 1. Notes (Dhifa/Riefky)
+    const side = getGuestSide(row);
+    const rawNote = getGuestNote(row);
+    // Standardize recognized side (dhifa/riefky/abi/umi/papa/mama) or fall back to raw note trimmed
+    const noteVal = side ? side.toLowerCase() : rawNote.trim().toLowerCase();
+
+    // 2. Label / Kategori
+    const label = (row['Label'] || row['label'] || row['Kategori'] || row['kategori'] || row['Category'] || row['category'] || '').toString().trim();
+    const labelVal = label.toLowerCase();
+
+    // 3. Phone number
+    const col = phoneCol || state.phoneColumn || detectPhoneColumn(Object.keys(row || {}));
+    const rawPhone = (col && row[col] !== undefined && row[col] !== null)
+      ? row[col]
+      : (row['Nomor WhatsApp'] || row['No WhatsApp'] || row['WhatsApp'] || row['Phone'] || row['No HP'] || row['HP'] || '');
+    const phoneInfo = normalizePhone(rawPhone);
+    const phoneVal = phoneInfo.formatted || (rawPhone ? rawPhone.toString().replace(/[^0-9]/g, '') : '');
+
+    return {
+      rawName,
+      lowerName,
+      side,
+      note: rawNote,
+      noteVal,
+      label,
+      labelVal,
+      phoneInfo,
+      phoneVal
+    };
+  }
+
+  function isGuestDuplicate(candidate, reference) {
+    // 0. Name check: if name is different, not duplicate
+    if (!candidate.lowerName || !reference.lowerName || candidate.lowerName !== reference.lowerName) {
+      return false;
+    }
+
+    // Name is the same. Check sequentially:
+    // If one of them is different, do NOT mark as duplicate name.
+
+    // 1. Check notes (Dhifa/Riefky)
+    if (candidate.noteVal !== reference.noteVal) {
+      return false;
+    }
+
+    // 2. Check label
+    if (candidate.labelVal !== reference.labelVal) {
+      return false;
+    }
+
+    // 3. Check phone number
+    if (candidate.phoneVal !== reference.phoneVal) {
+      return false;
+    }
+
+    // None of them is different (name, notes, label, and phone all match) -> duplicate!
+    return true;
+  }
+
   function openImportPreviewModal(incomingRows, filename) {
     if (!incomingRows || incomingRows.length === 0) {
       showToast('File Excel kosong atau tidak memiliki data.', 'danger');
@@ -948,42 +1011,50 @@
 
     pendingImportFilename = filename || 'Data Excel';
 
-    // Map existing guest names strictly by name (case-insensitive & trimmed)
-    const existingNamesSet = new Set();
-    state.rawRows.forEach(r => {
-      const name = (r['Nama'] || r['Name'] || '').toString().trim().toLowerCase();
-      if (name) existingNamesSet.add(name);
-    });
-
-    const seenInIncomingBatch = new Set();
     const phoneCol = detectPhoneColumn(Object.keys(incomingRows[0] || {}));
 
+    // Extract identities of all existing guests in state.rawRows
+    const existingGuestIdentities = (state.rawRows || []).map(r => 
+      extractGuestIdentity(r, state.phoneColumn)
+    );
+
+    // Keep track of non-duplicate incoming guests accepted from this batch
+    const incomingAcceptedIdentities = [];
+
     pendingImportItems = incomingRows.map((row, idx) => {
-      const rawName = (row['Nama'] || row['Name'] || '').toString().trim();
-      const lowerName = rawName.toLowerCase();
-      const isAlreadyInList = lowerName ? existingNamesSet.has(lowerName) : false;
-      const isDuplicateInBatch = lowerName ? seenInIncomingBatch.has(lowerName) : false;
+      const candidate = extractGuestIdentity(row, phoneCol);
+      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+
+      // Sequential duplicate check:
+      // If same name, check notes (Dhifa/Riefky), label, and phone.
+      // If any of them is different, it is NOT marked as duplicate.
+      const matchedExisting = candidate.lowerName
+        ? existingGuestIdentities.find(existing => isGuestDuplicate(candidate, existing))
+        : null;
+
+      const matchedBatch = (!matchedExisting && candidate.lowerName)
+        ? incomingAcceptedIdentities.find(earlier => isGuestDuplicate(candidate, earlier))
+        : null;
+
+      const isAlreadyInList = !!matchedExisting;
+      const isDuplicateInBatch = !!matchedBatch;
       const isDuplicate = isAlreadyInList || isDuplicateInBatch;
 
-      if (!isDuplicate && lowerName) {
-        seenInIncomingBatch.add(lowerName);
+      if (!isDuplicate && candidate.lowerName) {
+        incomingAcceptedIdentities.push(candidate);
       }
-
-      const side = getGuestSide(row);
-      const note = getGuestNote(row);
-      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
-      const phoneInfo = normalizePhone(row[phoneCol]);
 
       return {
         row,
         index: idx,
-        name: rawName || `Tamu #${idx + 1}`,
+        name: candidate.rawName || `Tamu #${idx + 1}`,
         isDuplicate,
         duplicateReason: isAlreadyInList ? 'Sudah ada di daftar tamu' : (isDuplicateInBatch ? 'Duplikat dalam file Excel ini' : ''),
-        side,
-        note,
+        side: candidate.side,
+        note: candidate.note,
+        label: candidate.label,
         pax,
-        phoneInfo,
+        phoneInfo: candidate.phoneInfo,
         selected: !isDuplicate // New guests checked by default, duplicates unchecked
       };
     });
@@ -1064,6 +1135,9 @@
       // Nama Tamu
       const tdName = document.createElement('td');
       tdName.innerHTML = `<span class="import-guest-name">${escapeHtml(item.name)}</span>`;
+      if (item.label) {
+        tdName.innerHTML += ` <span class="mobile-category-badge" style="font-size:0.68rem;padding:1px 6px;vertical-align:middle;">${escapeHtml(item.label)}</span>`;
+      }
       if (item.isDuplicate) {
         tdName.innerHTML += `<div style="font-size:0.72rem;color:#b45309;margin-top:2px;">⚠️ ${escapeHtml(item.duplicateReason)}</div>`;
       }
