@@ -2434,16 +2434,30 @@
     dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${t('stat.progressGuests')})`;
     dom.progressBarFill.style.width = `${percentage}%`;
 
-    // Status filter counters — reflect current side/search filter
+    // Status filter counters — based on side+search only (NOT the active status pill)
+    // so All=Sent+NotSent always holds and switching pills doesn't zero-out the other tab
     const countAllEl = document.getElementById('countFilterAll');
     const countPendingEl = document.getElementById('countFilterPending');
     const countSentEl = document.getElementById('countFilterSent');
-    const filteredAll = filterRows();
-    const filteredSentCount = filteredAll.filter(({ row, originalIndex }) => isRowSent(row, originalIndex)).length;
-    const filteredPendingCount = filteredAll.length - filteredSentCount;
-    if (countAllEl) countAllEl.textContent = filteredAll.length;
-    if (countPendingEl) countPendingEl.textContent = filteredPendingCount;
-    if (countSentEl) countSentEl.textContent = filteredSentCount;
+    const q = state.searchQuery.toLowerCase().trim();
+    const sideFilter = state.currentSideFilter || 'all';
+    const sideSearchFiltered = state.rawRows.map((row, originalIndex) => ({ row, originalIndex })).filter(({ row, originalIndex }) => {
+      const guestSide = getGuestSide(row);
+      if (sideFilter !== 'all' && guestSide !== sideFilter) return false;
+      if (q) {
+        const name = (row['Nama'] || row['Name'] || '').toString().toLowerCase();
+        const label = (row['Label'] || '').toString().toLowerCase();
+        const phone = (row[state.phoneColumn] || '').toString().toLowerCase();
+        const note = getGuestNote(row).toLowerCase();
+        return name.includes(q) || label.includes(q) || phone.includes(q) || note.includes(q);
+      }
+      return true;
+    });
+    const tabSentCount = sideSearchFiltered.filter(({ row, originalIndex }) => isRowSent(row, originalIndex)).length;
+    const tabPendingCount = sideSearchFiltered.length - tabSentCount;
+    if (countAllEl) countAllEl.textContent = sideSearchFiltered.length;
+    if (countPendingEl) countPendingEl.textContent = tabPendingCount;
+    if (countSentEl) countSentEl.textContent = tabSentCount;
 
     // Pihak / Notes filter counters
     const countSideAllEl = document.getElementById('countSideAll');
