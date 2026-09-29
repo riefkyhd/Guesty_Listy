@@ -1528,23 +1528,22 @@
 
         card.innerHTML = `
           <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
-            <button type="button" class="mobile-status-pill ${isSent ? 'status-sent' : 'status-pending'}" title="Klik untuk ubah status kirim">
-              <i data-lucide="${isSent ? 'check-circle-2' : 'clock'}" style="width:11px;height:11px;"></i>
-              <span>${isSent ? 'Terkirim' : 'Belum'}</span>
+            <button type="button" class="mobile-status-btn ${isSent ? 'status-sent' : 'status-pending'}" title="${isSent ? 'Sudah Terkirim (klik untuk ubah)' : 'Belum Dikirim (klik untuk tandai terkirim)'}" aria-label="${isSent ? 'Status terkirim' : 'Status belum terkirim'}">
+              <i data-lucide="${isSent ? 'check' : 'clock'}" style="width:18px;height:18px;"></i>
             </button>
-            <div class="mobile-guest-header-main">
-              <div class="mobile-guest-title-row">
-                <span class="mobile-guest-num">#${originalIndex + 1}</span>
-                <span class="mobile-guest-name">${escapeHtml(guestName)}</span>
+            <div class="mobile-guest-header-main flex-1 min-w-0">
+              <div class="mobile-guest-title-row flex items-center gap-2 min-w-0 w-full">
+                <span class="mobile-guest-num text-xs font-bold">#${originalIndex + 1}</span>
+                <span class="mobile-guest-name font-semibold truncate whitespace-nowrap">${escapeHtml(guestName)}</span>
               </div>
-              <div class="mobile-guest-sub-row">
-                <span class="mobile-pax-badge"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} Tamu</span>
-                ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky">💼 Riefky</span>` : '')}
-                ${label ? `<span class="mobile-category-badge">${escapeHtml(label)}</span>` : ''}
+              <div class="mobile-guest-sub-row flex flex-wrap items-center gap-1.5 text-xs mt-1">
+                <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} Tamu</span>
+                ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa text-xs">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky text-xs">💼 Riefky</span>` : '')}
+                ${label ? `<span class="mobile-category-badge text-xs">${escapeHtml(label)}</span>` : ''}
               </div>
             </div>
-            <div class="mobile-guest-header-actions">
-              <span class="mobile-chevron-wrap">
+            <div class="mobile-guest-header-actions pointer-events-none flex items-center justify-center shrink-0">
+              <span class="mobile-chevron-wrap pointer-events-none">
                 <i data-lucide="chevron-down" class="mobile-chevron-icon" style="width:16px;height:16px;"></i>
               </span>
             </div>
@@ -1567,17 +1566,23 @@
               </div>
 
               <div class="mobile-drawer-actions">
-                <button type="button" class="btn btn-primary btn-sm btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}">
-                  <i data-lucide="send"></i> Buka WA
+                <button type="button" class="btn btn-primary btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''} w-full min-h-[44px]">
+                  <i data-lucide="send"></i> Kirim WhatsApp
+                </button>
+                <button type="button" class="btn btn-outline btn-drawer-copy-link ${(!phoneInfo.isValid && !link) ? 'btn-action-disabled' : ''} w-full min-h-[44px]">
+                  <i data-lucide="link"></i> Salin Link Undangan
+                </button>
+                <button type="button" class="btn btn-outline btn-drawer-toggle-sent w-full min-h-[44px]">
+                  <i data-lucide="${isSent ? 'rotate-ccw' : 'check'}"></i> ${isSent ? 'Tandai Belum Terkirim' : 'Tandai Sudah Terkirim'}
                 </button>
                 <div class="mobile-drawer-actions-secondary">
-                  <button type="button" class="btn btn-outline btn-sm btn-drawer-preview">
+                  <button type="button" class="btn btn-outline btn-drawer-preview min-h-[44px]">
                     <i data-lucide="eye"></i> Preview
                   </button>
-                  <button type="button" class="btn btn-outline btn-sm btn-drawer-copy-msg">
+                  <button type="button" class="btn btn-outline btn-drawer-copy-msg min-h-[44px]">
                     <i data-lucide="copy"></i> Salin Pesan
                   </button>
-                  <button type="button" class="btn btn-outline-danger btn-sm btn-drawer-delete">
+                  <button type="button" class="btn btn-outline-danger btn-drawer-delete min-h-[44px]">
                     <i data-lucide="trash-2"></i> Hapus
                   </button>
                 </div>
@@ -1589,33 +1594,73 @@
         // Click anywhere on row header to expand/collapse (smooth accordion with viewport anchor)
         const rowHeader = card.querySelector('.mobile-guest-row-header');
         rowHeader.addEventListener('click', (e) => {
-          if (e.target.closest('.mobile-status-pill')) return;
+          if (e.target.closest('.mobile-status-btn')) return;
           toggleMobileCard(card, originalIndex);
         });
 
         rowHeader.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
+            if (e.target.closest('.mobile-status-btn')) return;
             e.preventDefault();
             toggleMobileCard(card, originalIndex);
           }
         });
 
-        // Quick status toggle directly on pill
-        const statusBtn = card.querySelector('.mobile-status-pill');
-        statusBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const next = !isRowSent(row, originalIndex);
-          await setRowSent(row, originalIndex, next);
+        // Quick status toggle directly on status icon or drawer button, with Undo toast
+        const handleStatusToggle = async (e) => {
+          if (e) e.stopPropagation();
+          const previousState = isRowSent(row, originalIndex);
+          const nextState = !previousState;
+          await setRowSent(row, originalIndex, nextState);
           renderTable();
-          showToast(next ? `${guestName} ditandai Sudah Dikirim!` : `${guestName} ditandai Belum Dikirim.`, 'success');
-        });
+          showToast(
+            nextState ? `${guestName} ditandai Sudah Terkirim` : `${guestName} ditandai Belum Terkirim`,
+            'success',
+            {
+              label: 'Urungkan',
+              onClick: async () => {
+                await setRowSent(row, originalIndex, previousState);
+                renderTable();
+                showToast(`Status ${guestName} dikembalikan.`, 'info');
+              }
+            }
+          );
+        };
+
+        const statusBtn = card.querySelector('.mobile-status-btn');
+        if (statusBtn) {
+          statusBtn.addEventListener('click', handleStatusToggle);
+        }
+
+        const btnToggleSent = card.querySelector('.btn-drawer-toggle-sent');
+        if (btnToggleSent) {
+          btnToggleSent.addEventListener('click', handleStatusToggle);
+        }
 
         // Drawer buttons
         const btnPrev = card.querySelector('.btn-drawer-preview');
-        btnPrev.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo);
-        });
+        if (btnPrev) {
+          btnPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo);
+          });
+        }
+
+        const btnCopyLinkMobile = card.querySelector('.btn-drawer-copy-link');
+        if (btnCopyLinkMobile) {
+          const targetLink = phoneInfo.isValid ? waUrl : (link || '');
+          if (targetLink) {
+            btnCopyLinkMobile.addEventListener('click', (e) => {
+              e.stopPropagation();
+              copyToClipboard(targetLink, `Link WhatsApp untuk ${guestName} berhasil disalin!`);
+            });
+          } else {
+            btnCopyLinkMobile.addEventListener('click', (e) => {
+              e.stopPropagation();
+              showToast('Tidak ada tautan untuk disalin.', 'danger');
+            });
+          }
+        }
 
         const btnCopyMsgMobile = card.querySelector('.btn-drawer-copy-msg');
         if (btnCopyMsgMobile) {
@@ -1634,14 +1679,21 @@
         }
 
         const btnSend = card.querySelector('.btn-drawer-send');
-        if (phoneInfo.isValid) {
-          btnSend.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            window.open(waUrl, '_blank');
-            await setRowSent(row, originalIndex, true);
-            renderTable();
-            showToast(`Membuka WhatsApp untuk ${guestName}...`, 'success');
-          });
+        if (btnSend) {
+          if (phoneInfo.isValid) {
+            btnSend.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              window.open(waUrl, '_blank');
+              await setRowSent(row, originalIndex, true);
+              renderTable();
+              showToast(`Membuka WhatsApp untuk ${guestName}...`, 'success');
+            });
+          } else {
+            btnSend.addEventListener('click', (e) => {
+              e.stopPropagation();
+              showToast('Nomor WhatsApp belum valid.', 'danger');
+            });
+          }
         }
 
         dom.mobileCardsList.appendChild(card);
@@ -1923,19 +1975,38 @@
     document.body.removeChild(ta);
   }
 
-  function showToast(message, type = 'success') {
+  function showToast(message, type = 'success', action = null) {
     const toast = document.createElement('div');
     const isDanger = type === 'danger';
     const isInfo = type === 'info';
     toast.className = `toast ${isDanger ? 'toast-danger' : (isInfo ? 'toast-info' : '')}`;
     const icon = isDanger ? 'alert-triangle' : (isInfo ? 'info' : 'check-circle-2');
-    toast.innerHTML = `<i data-lucide="${icon}" style="width:16px;height:16px;"></i> <span>${escapeHtml(message)}</span>`;
+
+    let contentHtml = `<div class="toast-content"><i data-lucide="${icon}" style="width:16px;height:16px;flex-shrink:0;"></i> <span>${escapeHtml(message)}</span></div>`;
+    if (action && action.label) {
+      contentHtml += `<button type="button" class="toast-action-btn">${escapeHtml(action.label)}</button>`;
+    }
+    toast.innerHTML = contentHtml;
+
+    if (action && typeof action.onClick === 'function') {
+      const btnAction = toast.querySelector('.toast-action-btn');
+      if (btnAction) {
+        btnAction.addEventListener('click', (e) => {
+          e.stopPropagation();
+          action.onClick();
+          toast.classList.add('toast-closing');
+          setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 220);
+        });
+      }
+    }
+
     dom.toastContainer.appendChild(toast);
     setupLucideIcons();
+    const duration = action ? 4500 : 3200;
     setTimeout(() => {
       toast.classList.add('toast-closing');
       setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 220);
-    }, 3200);
+    }, duration);
   }
 
   // ===========================================================================

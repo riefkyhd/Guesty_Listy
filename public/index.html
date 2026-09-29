@@ -30,6 +30,16 @@
     }
   </script>
 
+  <!-- Tailwind CSS (utilities only, preflight disabled to preserve existing theme) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: {
+        preflight: false,
+      }
+    };
+  </script>
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/css/style.css">
 </head>
