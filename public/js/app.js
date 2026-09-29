@@ -92,7 +92,7 @@
       'table.thName': 'Guest Name & Category',
       'table.thPhone': 'WhatsApp Number',
       'table.thLink': 'Invitation Link',
-      'table.thActions': 'WhatsApp Action',
+      'table.thActions': 'Actions',
       'table.emptyTitle': 'No Matching Data',
       'table.emptyDesc': 'No guests match your current filter or search.',
       'table.showingCount': 'Showing {count} of {total} guests',
@@ -289,7 +289,7 @@
       'table.thName': 'Nama Tamu & Kategori',
       'table.thPhone': 'Nomor WhatsApp',
       'table.thLink': 'Link Undangan',
-      'table.thActions': 'Aksi WhatsApp',
+      'table.thActions': 'Aksi',
       'table.emptyTitle': 'Tidak Ada Data yang Sesuai',
       'table.emptyDesc': 'Tidak ada tamu yang cocok dengan filter atau pencarian Anda saat ini.',
       'table.showingCount': 'Menampilkan {count} dari {total} undangan',
@@ -688,15 +688,21 @@
             <td class="col-name">
               <div class="skeleton-cell-name">
                 <span class="shimmer skeleton-title" style="width: 130px;"></span>
-                <span class="shimmer skeleton-text" style="width: 70px;"></span>
+                <div style="display:flex;gap:6px;">
+                  <span class="shimmer skeleton-pill" style="width: 48px; height: 18px;"></span>
+                  <span class="shimmer skeleton-pill" style="width: 60px; height: 18px;"></span>
+                </div>
               </div>
             </td>
             <td class="col-phone"><span class="shimmer skeleton-text" style="width: 110px;"></span></td>
             <td class="col-link"><span class="shimmer skeleton-text" style="width: 140px;"></span></td>
             <td class="col-actions">
               <div class="skeleton-cell-actions">
-                <span class="shimmer skeleton-badge" style="width: 65px; height: 30px; border-radius: 8px;"></span>
-                <span class="shimmer skeleton-badge" style="width: 65px; height: 30px; border-radius: 8px;"></span>
+                <span class="shimmer skeleton-badge" style="width: 72px; height: 32px; border-radius: 20px;"></span>
+                <span class="shimmer skeleton-badge" style="width: 84px; height: 32px; border-radius: 20px;"></span>
+                <span class="shimmer skeleton-badge" style="width: 110px; height: 32px; border-radius: 20px;"></span>
+                <span class="shimmer skeleton-circle" style="width: 32px; height: 32px;"></span>
+                <span class="shimmer skeleton-circle" style="width: 32px; height: 32px;"></span>
               </div>
             </td>
           </tr>
@@ -708,13 +714,19 @@
         dom.mobileCardsList.innerHTML = Array(4).fill(0).map(() => `
           <div class="mobile-skeleton-card">
             <div class="mobile-skeleton-header">
+              <span class="shimmer skeleton-circle" style="width: 40px; height: 40px; flex-shrink: 0;"></span>
               <div class="mobile-skeleton-left">
-                <span class="shimmer skeleton-title" style="width: 140px;"></span>
-                <span class="shimmer skeleton-text" style="width: 70px;"></span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span class="shimmer skeleton-badge" style="width: 24px; height: 13px;"></span>
+                  <span class="shimmer skeleton-title" style="width: 130px;"></span>
+                </div>
+                <div style="display:flex;gap:6px;margin-top:4px;">
+                  <span class="shimmer skeleton-pill" style="width: 42px; height: 18px;"></span>
+                  <span class="shimmer skeleton-pill" style="width: 55px; height: 18px;"></span>
+                </div>
               </div>
               <div class="mobile-skeleton-right">
-                <span class="shimmer skeleton-pill" style="width: 65px;"></span>
-                <span class="shimmer skeleton-circle" style="width: 16px; height: 16px;"></span>
+                <span class="shimmer skeleton-circle" style="width: 20px; height: 20px;"></span>
               </div>
             </div>
           </div>
