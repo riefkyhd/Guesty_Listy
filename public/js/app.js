@@ -108,7 +108,7 @@
       'card.statusPending': 'Not Sent',
       'card.toggleToPending': 'Click to mark as Not Sent',
       'card.toggleToSent': 'Click to mark as Sent',
-      'card.withoutPhone': 'No WhatsApp Number',
+      'card.withoutPhone': 'No WA',
       'card.openDirect': 'Open in WhatsApp',
       'card.markAsSent': 'Mark as Sent',
       'card.markAsPending': 'Mark as Not Sent',
@@ -213,7 +213,10 @@
       'footer.sync': 'Sync active 🟢',
       'footer.syncConnecting': 'Connecting...',
       'footer.syncOffline': 'Cloud Saved (Polling) 🟢',
-      'footer.langLabel': 'Language:'
+      'footer.langLabel': 'Language:',
+
+      'fileStatus.saved': 'Data saved (Supabase)',
+      'fileStatus.detected': '{count} guests detected'
     },
     id: {
       'pin.title': 'Masukkan PIN Keamanan',
@@ -302,7 +305,7 @@
       'card.statusPending': 'Belum Kirim',
       'card.toggleToPending': 'Klik untuk tandai Belum Dikirim',
       'card.toggleToSent': 'Klik untuk tandai Sudah Dikirim',
-      'card.withoutPhone': 'Tanpa Nomor WhatsApp',
+      'card.withoutPhone': 'No WA',
       'card.openDirect': 'Buka di WhatsApp',
       'card.markAsSent': 'Tandai Sudah Terkirim',
       'card.markAsPending': 'Tandai Belum Terkirim',
@@ -407,7 +410,10 @@
       'footer.sync': 'Sinkronisasi aktif 🟢',
       'footer.syncConnecting': 'Menghubungkan...',
       'footer.syncOffline': 'Cloud Tersimpan (Polling) 🟢',
-      'footer.langLabel': 'Bahasa:'
+      'footer.langLabel': 'Bahasa:',
+
+      'fileStatus.saved': 'Data tersimpan (Supabase)',
+      'fileStatus.detected': '{count} Tamu Undangan terdeteksi'
     }
   };
 
@@ -1282,7 +1288,7 @@
       const guests = data.guests || [];
       if (guests.length > 0) {
         const rows = guests.map(g => g.raw_data);
-        processRows(rows, 'Data tersimpan (Supabase)');
+        processRows(rows, t('fileStatus.saved'));
         return true;
       }
     } catch (e) {
@@ -1783,7 +1789,7 @@
   function updateFileStatusBar(filename, count) {
     dom.fileStatusBar.style.display = 'flex';
     if (filename) dom.loadedFileName.textContent = filename;
-    dom.loadedFileDetails.textContent = `${count} Tamu Undangan terdeteksi`;
+    dom.loadedFileDetails.textContent = t('fileStatus.detected', { count });
   }
 
   function populatePhoneColSelector() {
@@ -2416,13 +2422,16 @@
     dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${t('stat.progressGuests')})`;
     dom.progressBarFill.style.width = `${percentage}%`;
 
-    // Status filter counters
+    // Status filter counters — reflect current side/search filter
     const countAllEl = document.getElementById('countFilterAll');
     const countPendingEl = document.getElementById('countFilterPending');
     const countSentEl = document.getElementById('countFilterSent');
-    if (countAllEl) countAllEl.textContent = total;
-    if (countPendingEl) countPendingEl.textContent = pendingCount;
-    if (countSentEl) countSentEl.textContent = sentCount;
+    const filteredAll = filterRows();
+    const filteredSentCount = filteredAll.filter(({ row, originalIndex }) => isRowSent(row, originalIndex)).length;
+    const filteredPendingCount = filteredAll.length - filteredSentCount;
+    if (countAllEl) countAllEl.textContent = filteredAll.length;
+    if (countPendingEl) countPendingEl.textContent = filteredPendingCount;
+    if (countSentEl) countSentEl.textContent = filteredSentCount;
 
     // Pihak / Notes filter counters
     const countSideAllEl = document.getElementById('countSideAll');
