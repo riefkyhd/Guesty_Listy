@@ -2005,20 +2005,117 @@ textarea#templateInput {
 }
 
 /* Footer */
+/* Footer & Language Switcher */
 .app-footer {
   border-top: 1px solid var(--slate-200);
   background: #FFFFFF;
-  padding: 18px 0;
+  padding: 16px 0;
   margin-top: auto;
 }
 
 .footer-inner {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 0 32px;
-  text-align: center;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   font-size: 0.8rem;
   color: var(--slate-500);
+}
+
+@media (min-width: 768px) {
+  .footer-inner {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.footer-meta {
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .footer-meta {
+    text-align: left;
+  }
+}
+
+.footer-lang-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-switcher-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+}
+
+.lang-toggle-btn {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  line-height: 1.4;
+}
+
+.lang-toggle-btn:hover {
+  color: var(--slate-900);
+}
+
+.lang-toggle-btn.active {
+  background: #FFFFFF;
+  color: var(--slate-900);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.lang-flag {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+/* PIN Card Language Switcher */
+.pin-lang-switcher {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.pin-lang-switcher .lang-switcher-pill {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.pin-lang-switcher .lang-toggle-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pin-lang-switcher .lang-toggle-btn:hover {
+  color: #FFFFFF;
+}
+
+.pin-lang-switcher .lang-toggle-btn.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ==========================================================================

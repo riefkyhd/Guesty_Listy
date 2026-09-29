@@ -52,23 +52,37 @@
         <i data-lucide="lock"></i>
       </div>
       <h2 class="pin-title">Viding WA Generator</h2>
-      <p class="pin-subtitle">Masukkan PIN untuk mengakses aplikasi</p>
+      <p class="pin-subtitle" data-i18n="pin.subtitle">Enter PIN to access the application</p>
       <div class="pin-input-wrapper">
         <input
           type="password"
           id="pinInput"
           class="pin-input"
-          placeholder="Masukkan PIN"
+          placeholder="Enter PIN"
+          data-i18n-placeholder="pin.placeholder"
           maxlength="8"
           autocomplete="off"
           autofocus
         >
-        <p id="pinError" class="pin-error" style="display:none;">PIN salah. Coba lagi.</p>
+        <p id="pinError" class="pin-error" style="display:none;" data-i18n="pin.error">Incorrect PIN. Try again.</p>
       </div>
       <button id="btnUnlock" class="btn btn-primary pin-btn">
-        <i data-lucide="unlock"></i> Buka Akses
+        <i data-lucide="unlock"></i> <span data-i18n="pin.unlock">Unlock Access</span>
       </button>
-      <p class="pin-hint">💍 Hanya untuk Dhifa &amp; Riefky</p>
+      <p class="pin-hint" data-i18n="pin.hint">💍 Exclusively for Dhifa &amp; Riefky</p>
+
+      <div class="pin-lang-switcher">
+        <div class="lang-switcher-pill" role="radiogroup" aria-label="Language">
+          <button type="button" class="lang-toggle-btn active" data-lang="en" role="radio" aria-checked="true">
+            <span class="lang-flag">🇬🇧</span>
+            <span class="lang-name">English</span>
+          </button>
+          <button type="button" class="lang-toggle-btn" data-lang="id" role="radio" aria-checked="false">
+            <span class="lang-flag">🇮🇩</span>
+            <span class="lang-name">Indonesia</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -81,12 +95,12 @@
         </div>
         <div>
           <h1 class="brand-title">Viding WA Generator</h1>
-          <p class="brand-subtitle">Generator Link wa.me &amp; Template Pesan Undangan</p>
+          <p class="brand-subtitle" data-i18n="app.subtitle">WhatsApp Link &amp; Invitation Template Generator</p>
         </div>
         <div class="header-right-badges">
-          <button type="button" id="btnOpenActivityLog" class="btn-activity-badge" title="Lihat Riwayat Aktivitas &amp; Info Device">
+          <button type="button" id="btnOpenActivityLog" class="btn-activity-badge" title="View Activity History &amp; Device Info" data-i18n-title="app.historyTitle">
             <i data-lucide="history"></i>
-            <span class="btn-activity-text">Riwayat</span>
+            <span class="btn-activity-text" data-i18n="app.history">Activity</span>
           </button>
         </div>
       </div>
@@ -94,24 +108,24 @@
       <!-- Quick Metrics Summary (Clean 3-Metric Bar) -->
       <div class="header-metrics" id="headerStats">
         <div class="metric-card">
-          <span class="metric-title">Total Undangan</span>
+          <span class="metric-title" data-i18n="stat.totalGuests">Total Guests</span>
           <span class="metric-num" id="statTotalGuests">0</span>
-          <span class="metric-sub" id="statTotalPax">👥 0 Tamu</span>
+          <span class="metric-sub" id="statTotalPax">👥 0 Guests</span>
         </div>
         <div class="metric-card metric-success">
-          <span class="metric-title">Sudah Dikirim</span>
+          <span class="metric-title" data-i18n="stat.sent">Sent</span>
           <span class="metric-num" id="statSentCount">0 (0%)</span>
-          <span class="metric-sub" id="statSentPax">👥 0 Tamu</span>
+          <span class="metric-sub" id="statSentPax">👥 0 Guests</span>
         </div>
         <div class="metric-card metric-warning">
-          <span class="metric-title">Belum Dikirim</span>
+          <span class="metric-title" data-i18n="stat.pending">Not Sent</span>
           <span class="metric-num" id="statPendingCount">0</span>
-          <span class="metric-sub" id="statPendingPax">👥 0 Tamu</span>
+          <span class="metric-sub" id="statPendingPax">👥 0 Guests</span>
         </div>
         <!-- Realtime sync indicator -->
-        <div class="metric-card sync-indicator" id="syncIndicator" title="Status sinkronisasi Realtime">
+        <div class="metric-card sync-indicator" id="syncIndicator" title="Realtime synchronization status" data-i18n-title="stat.syncTitle">
           <span class="sync-dot" id="syncDot"></span>
-          <span class="metric-title" id="syncLabel">Menghubungkan...</span>
+          <span class="metric-title" id="syncLabel" data-i18n="stat.syncConnecting">Connecting...</span>
         </div>
       </div>
     </div>
@@ -125,10 +139,10 @@
       <button type="button" id="btnToggleTopConfig" class="btn-toggle-config">
         <span class="btn-toggle-left">
           <i data-lucide="sliders-horizontal"></i>
-          <span>Pengaturan Data &amp; Template</span>
+          <span data-i18n="config.toggleTitle">Data &amp; Template Settings</span>
         </span>
         <span class="btn-toggle-right">
-          <span class="toggle-hint-badge">Buka/Tutup</span>
+          <span class="toggle-hint-badge" data-i18n="config.toggleHint">Open/Close</span>
           <i data-lucide="chevron-down" id="chevronConfigIcon"></i>
         </span>
       </button>
@@ -142,8 +156,8 @@
         <div class="card-header">
           <div class="step-badge">1</div>
           <div class="header-text">
-            <h2 class="card-title">Sumber Data Excel</h2>
-            <p class="card-subtitle">Pilih file undangan Excel (.xlsx / .xls)</p>
+            <h2 class="card-title" data-i18n="source.title">Excel Data Source</h2>
+            <p class="card-subtitle" data-i18n="source.subtitle">Select Excel invitation file (.xlsx / .xls)</p>
           </div>
         </div>
 
@@ -155,8 +169,8 @@
               <i data-lucide="file-spreadsheet"></i>
             </div>
             <div class="dropzone-text">
-              <p class="dropzone-main">Klik atau seret file <strong>Excel (.xlsx / .xls)</strong> ke sini</p>
-              <p class="dropzone-sub">Tambahkan tamu baru tanpa menimpa data yang ada (otomatis cek duplikat)</p>
+              <p class="dropzone-main" data-i18n="source.dropzoneMain">Click or drag <strong>Excel (.xlsx / .xls)</strong> file here</p>
+              <p class="dropzone-sub" data-i18n="source.dropzoneSub">Add new guests without overwriting existing data (auto duplicate check)</p>
             </div>
           </div>
 
@@ -174,8 +188,8 @@
           <!-- Available Tags List -->
           <div class="tags-section">
             <div class="tags-header">
-              <span class="tags-title"><i data-lucide="tag"></i> Tag Kolom yang Tersedia:</span>
-              <span class="tags-desc">Klik tag di bawah untuk menyisipkan ke pesan</span>
+              <span class="tags-title"><i data-lucide="tag"></i> <span data-i18n="source.tagsTitle">Available Column Tags:</span></span>
+              <span class="tags-desc" data-i18n="source.tagsDesc">Click tag below to insert into message</span>
             </div>
             <div class="tags-list" id="tagsList">
               <!-- Dynamically populated tags -->
@@ -189,17 +203,17 @@
         <div class="card-header">
           <div class="step-badge">2</div>
           <div class="header-text">
-            <h2 class="card-title">Template Pesan WhatsApp</h2>
-            <p class="card-subtitle">Sesuaikan pesan dengan placeholder otomatis</p>
+            <h2 class="card-title" data-i18n="template.title">WhatsApp Message Template</h2>
+            <p class="card-subtitle" data-i18n="template.subtitle">Customize message with automatic placeholders</p>
           </div>
 
           <!-- Preset Selector -->
           <div class="preset-dropdown-wrapper ml-auto">
             <select id="templatePresetSelect" class="form-select form-select-sm">
-              <option value="formal">💍 Format Resmi (Formal)</option>
-              <option value="casual">🌿 Format Santai (Teman/Sahabat)</option>
-              <option value="singkat">⚡ Format Singkat (Reminder)</option>
-              <option value="custom">✏️ Template Kustom Saya</option>
+              <option value="formal">💍 Formal Format</option>
+              <option value="casual">🌿 Casual Format (Friends)</option>
+              <option value="singkat">⚡ Short Format (Reminder)</option>
+              <option value="custom">✏️ My Custom Template</option>
             </select>
           </div>
         </div>
@@ -207,15 +221,15 @@
         <div class="card-body">
           <!-- Textarea for Template -->
           <div class="editor-container">
-            <textarea id="templateInput" rows="7" placeholder="Tuliskan format pesan undangan di sini... Gunakan tag seperti [Sapaan], [Nama], [Link]"></textarea>
+            <textarea id="templateInput" rows="7" placeholder="Write invitation message format here... Use tags like [Sapaan], [Nama], [Link]" data-i18n-placeholder="template.placeholder"></textarea>
             <div class="editor-footer">
-              <span id="charCounter" class="char-count">0 karakter | 0 kata</span>
+              <span id="charCounter" class="char-count">0 characters | 0 words</span>
               <div class="editor-buttons">
-                <button id="btnSaveCustomTemplate" class="btn btn-outline btn-xs" title="Simpan sebagai template kustom">
-                  <i data-lucide="save"></i> Simpan
+                <button id="btnSaveCustomTemplate" class="btn btn-outline btn-xs" title="Save as custom template" data-i18n-title="template.saveTitle">
+                  <i data-lucide="save"></i> <span data-i18n="template.save">Save</span>
                 </button>
-                <button id="btnResetTemplate" class="btn btn-outline btn-xs text-danger" title="Kembalikan ke format awal">
-                  <i data-lucide="rotate-ccw"></i> Reset
+                <button id="btnResetTemplate" class="btn btn-outline btn-xs text-danger" title="Reset to initial format" data-i18n-title="template.resetTitle">
+                  <i data-lucide="rotate-ccw"></i> <span data-i18n="template.reset">Reset</span>
                 </button>
               </div>
             </div>
@@ -226,10 +240,10 @@
             <div class="preview-header">
               <div class="preview-title">
                 <i data-lucide="smartphone"></i>
-                <span>Tampilan di WhatsApp Penerima:</span>
+                <span data-i18n="template.previewTitle">WhatsApp Recipient Preview:</span>
               </div>
               <div class="preview-picker">
-                <label for="previewGuestSelect">Preview untuk:</label>
+                <label for="previewGuestSelect" data-i18n="template.previewFor">Preview for:</label>
                 <select id="previewGuestSelect" class="form-select form-select-xs"></select>
               </div>
             </div>
@@ -244,7 +258,7 @@
 
     </section>
 
-    <!-- BOTTOM SECTION: Full-Width Recipient Table & wa.me Actions -->
+    <!-- BOTTOM SECTION: Full-Width Recipient Table & WhatsApp Actions -->
     <section class="bottom-table-section">
       <div class="card">
         
@@ -253,15 +267,15 @@
           <div class="title-with-badge">
             <div class="step-badge">3</div>
             <div>
-              <h2 class="card-title">Daftar Penerima Undangan & Generator wa.me</h2>
-              <p class="card-subtitle">Kelola pengiriman, salin link wa.me, atau kirim langsung ke WhatsApp</p>
+              <h2 class="card-title" data-i18n="table.title">Guest List &amp; WhatsApp Generator</h2>
+              <p class="card-subtitle" data-i18n="table.subtitle">Manage deliveries, copy WhatsApp links, or send directly to WhatsApp</p>
             </div>
           </div>
 
           <!-- Progress Bar Box -->
           <div class="progress-container">
             <div class="progress-labels">
-              <span>Progress Pengiriman:</span>
+              <span data-i18n="table.progressLabel">Delivery Progress:</span>
               <strong id="progressPercentage">0% (0/0)</strong>
             </div>
             <div class="progress-track">
@@ -275,26 +289,26 @@
           <!-- Search Input -->
           <div class="search-wrapper">
             <i data-lucide="search" class="search-icon"></i>
-            <input type="text" id="searchInput" placeholder="Cari nama, WA, label..." autocomplete="off">
-            <button id="btnClearSearch" class="btn-clear" style="display: none;" title="Hapus pencarian">
+            <input type="text" id="searchInput" placeholder="Search name, WA, label..." data-i18n-placeholder="table.searchPlaceholder" autocomplete="off">
+            <button id="btnClearSearch" class="btn-clear" style="display: none;" title="Clear search" data-i18n-title="table.clearSearch">
               <i data-lucide="x"></i>
             </button>
           </div>
 
           <!-- Notes / Pihak Filter Dropdown -->
           <div class="dropdown-filter-container" id="sideDropdownContainer">
-            <button type="button" class="filter-dropdown-btn" id="btnSideFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter Catatan / Pihak">
+            <button type="button" class="filter-dropdown-btn" id="btnSideFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter Notes / Side" data-i18n-title="table.filterSideTitle">
               <i data-lucide="filter" class="filter-icon" style="width: 14px; height: 14px;"></i>
-              <span id="sideFilterSelectedText">Filter: Semua</span>
+              <span id="sideFilterSelectedText">Filter: All</span>
               <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
             </button>
             <div class="filter-dropdown-menu" id="sideFilterDropdownMenu" style="display: none;">
               <button type="button" class="filter-dropdown-option active" data-side="all">
-                <span class="option-label">Semua</span>
+                <span class="option-label" data-i18n="table.sideAll">All</span>
                 <span class="option-count">(<span id="countSideAll">0</span>)</span>
               </button>
               <div class="dropdown-menu-divider"></div>
-              <div class="dropdown-section-title">Pihak Pengantin</div>
+              <div class="dropdown-section-title" data-i18n="table.sideGroomBride">Wedding Couple</div>
               <button type="button" class="filter-dropdown-option" data-side="dhifa">
                 <span class="option-label">🌸 Dhifa</span>
                 <span class="option-count">(<span id="countSideDhifa">0</span>)</span>
@@ -304,7 +318,7 @@
                 <span class="option-count">(<span id="countSideRiefky">0</span>)</span>
               </button>
               <div class="dropdown-menu-divider"></div>
-              <div class="dropdown-section-title">Keluarga</div>
+              <div class="dropdown-section-title" data-i18n="table.sideFamily">Family</div>
               <button type="button" class="filter-dropdown-option" data-side="abi">
                 <span class="option-label">🧔 Abi</span>
                 <span class="option-count">(<span id="countSideAbi">0</span>)</span>
@@ -326,18 +340,18 @@
 
           <!-- Filter Pills -->
           <div class="filter-group" id="filterPills">
-            <button class="filter-tab active" data-filter="all">Semua<span>(<span id="countFilterAll">0</span>)</span></button>
-            <button class="filter-tab tab-pending" data-filter="pending">⏳ Belum Kirim<span>(<span id="countFilterPending">0</span>)</span></button>
-            <button class="filter-tab tab-sent" data-filter="sent">🟢 Sudah Kirim<span>(<span id="countFilterSent">0</span>)</span></button>
+            <button class="filter-tab active" data-filter="all"><span data-i18n="table.tabAll">All</span> <span>(<span id="countFilterAll">0</span>)</span></button>
+            <button class="filter-tab tab-pending" data-filter="pending"><span data-i18n="table.tabPending">⏳ Not Sent</span> <span>(<span id="countFilterPending">0</span>)</span></button>
+            <button class="filter-tab tab-sent" data-filter="sent"><span data-i18n="table.tabSent">🟢 Sent</span> <span>(<span id="countFilterSent">0</span>)</span></button>
           </div>
 
           <!-- Bulk Status Actions -->
           <div class="bulk-tools">
-            <button id="btnMarkAllSent" class="btn btn-outline btn-sm" title="Tandai seluruh baris yang tampil sebagai Terkirim">
-              <i data-lucide="check-check"></i> Tandai Terkirim
+            <button id="btnMarkAllSent" class="btn btn-outline btn-sm" title="Mark all displayed rows as Sent" data-i18n-title="table.markAllSentTitle">
+              <i data-lucide="check-check"></i> <span data-i18n="table.markAllSent">Mark as Sent</span>
             </button>
-            <button id="btnResetAllSent" class="btn btn-outline btn-sm text-danger" title="Reset semua status pengiriman ke Belum Kirim">
-              <i data-lucide="rotate-ccw"></i> Reset Status
+            <button id="btnResetAllSent" class="btn btn-outline btn-sm text-danger" title="Reset all delivery statuses to Not Sent" data-i18n-title="table.resetAllSentTitle">
+              <i data-lucide="rotate-ccw"></i> <span data-i18n="table.resetAllSent">Reset Status</span>
             </button>
           </div>
         </div>
@@ -347,12 +361,12 @@
           <table class="data-table desktop-table-view" id="recipientsTable">
             <thead>
               <tr>
-                <th class="col-num">No</th>
-                <th class="col-status">Status Kirim</th>
-                <th class="col-name">Nama Tamu & Kategori</th>
-                <th class="col-phone">Nomor WhatsApp</th>
-                <th class="col-link">Link Undangan</th>
-                <th class="col-actions">Aksi WhatsApp</th>
+                <th class="col-num" data-i18n="table.thNo">No</th>
+                <th class="col-status" data-i18n="table.thStatus">Delivery Status</th>
+                <th class="col-name" data-i18n="table.thName">Guest Name &amp; Category</th>
+                <th class="col-phone" data-i18n="table.thPhone">WhatsApp Number</th>
+                <th class="col-link" data-i18n="table.thLink">Invitation Link</th>
+                <th class="col-actions" data-i18n="table.thActions">WhatsApp Action</th>
               </tr>
             </thead>
             <tbody id="recipientsTableBody">
@@ -370,17 +384,17 @@
             <div class="empty-icon-wrap">
               <i data-lucide="inbox"></i>
             </div>
-            <h3>Tidak Ada Data yang Sesuai</h3>
-            <p>Tidak ada tamu yang cocok dengan filter atau pencarian Anda saat ini.</p>
+            <h3 data-i18n="table.emptyTitle">No Matching Data</h3>
+            <p data-i18n="table.emptyDesc">No guests match your current filter or search.</p>
           </div>
         </div>
 
         <!-- Table Footer Info -->
         <div class="table-footer-bar">
-          <div class="table-footer-count" id="showingCountText">Menampilkan 0 undangan</div>
+          <div class="table-footer-count" id="showingCountText">Showing 0 guests</div>
           <div class="table-footer-instructions">
             <i data-lucide="info" class="footer-info-icon"></i>
-            <span class="footer-info-text">Klik badge <strong>Status</strong> pada baris/kartu untuk mengubah status antara <em>Sudah Dikirim</em> dan <em>Belum Dikirim</em>.</span>
+            <span class="footer-info-text" data-i18n="table.footerInstruction">Click the <strong>Status</strong> badge on any row/card to toggle between <em>Sent</em> and <em>Not Sent</em>.</span>
           </div>
         </div>
 
@@ -389,10 +403,24 @@
 
   </main>
 
-  <!-- Clean Minimalist Footer -->
+  <!-- Clean Minimalist Footer with Language Switcher -->
   <footer class="app-footer">
     <div class="footer-inner">
-      <p>Undangan Pernikahan <strong>Dhifa &amp; Riefky</strong> &bull; Viding WA Generator &bull; <span id="footerSyncStatus">Sinkronisasi aktif 🟢</span></p>
+      <div class="footer-meta">
+        <p><span data-i18n="footer.wedding">Wedding Invitation</span> <strong>Dhifa &amp; Riefky</strong> &bull; Viding WA Generator &bull; <span id="footerSyncStatus" data-i18n="footer.sync">Sync active 🟢</span></p>
+      </div>
+      <div class="footer-lang-container">
+        <div class="lang-switcher-pill" role="radiogroup" aria-label="Language">
+          <button type="button" class="lang-toggle-btn active" data-lang="en" role="radio" aria-checked="true">
+            <span class="lang-flag">🇬🇧</span>
+            <span class="lang-name">English</span>
+          </button>
+          <button type="button" class="lang-toggle-btn" data-lang="id" role="radio" aria-checked="false">
+            <span class="lang-flag">🇮🇩</span>
+            <span class="lang-name">Indonesia</span>
+          </button>
+        </div>
+      </div>
     </div>
   </footer>
 
@@ -403,8 +431,8 @@
   <div class="modal-overlay" id="previewModal" style="display: none;">
     <div class="modal-box">
       <div class="modal-top">
-        <h3 class="modal-heading" id="modalGuestTitle">Detail Pesan Undangan</h3>
-        <button class="modal-close-btn" id="btnCloseModal"><i data-lucide="x"></i></button>
+        <h3 class="modal-heading" id="modalGuestTitle" data-i18n="modal.sendTitle">Send Invitation</h3>
+        <button class="modal-close-btn" id="btnCloseModal" title="Close" data-i18n-title="modal.close"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-content">
         <div class="modal-meta-row" id="modalGuestInfo"></div>
@@ -419,23 +447,23 @@
         </div>
 
         <div class="modal-input-group">
-          <label>Link WhatsApp:</label>
+          <label id="modalWaLinkLabel" data-i18n="modal.waLink">WhatsApp Link:</label>
           <div class="input-with-button">
             <input type="text" id="modalWaLinkInput" readonly>
-            <button id="btnModalCopyLink" class="btn btn-outline btn-sm"><i data-lucide="copy"></i> Salin Link</button>
+            <button id="btnModalCopyLink" class="btn btn-outline btn-sm"><i data-lucide="copy"></i> <span data-i18n="modal.copyLink">Copy Link</span></button>
           </div>
         </div>
       </div>
       <div class="modal-bottom">
-        <button id="btnModalDeleteGuest" class="btn btn-outline-danger btn-sm" title="Hapus Tamu">
-          <i data-lucide="trash-2"></i> Hapus Tamu
+        <button id="btnModalDeleteGuest" class="btn btn-outline-danger btn-sm" title="Delete Guest" data-i18n-title="modal.deleteGuest">
+          <i data-lucide="trash-2"></i> <span data-i18n="modal.deleteGuest">Delete Guest</span>
         </button>
         <div class="modal-bottom-actions">
           <button id="btnModalCopyText" class="btn btn-outline btn-sm">
-            <i data-lucide="copy"></i> Salin Teks Pesan
+            <i data-lucide="copy"></i> <span data-i18n="modal.copyText">Copy Message Text</span>
           </button>
           <button id="btnModalSendWa" class="btn btn-primary btn-sm">
-            <i data-lucide="send"></i> Buka di WhatsApp
+            <i data-lucide="send"></i> <span id="btnModalSendWaText" data-i18n="modal.openWa">Open in WhatsApp</span>
           </button>
         </div>
       </div>
@@ -448,11 +476,11 @@
       <div class="confirm-modal-icon-wrap" id="confirmModalIconWrap">
         <i data-lucide="alert-triangle" id="confirmModalIcon"></i>
       </div>
-      <h3 class="confirm-modal-title" id="confirmModalTitle">Konfirmasi Tindakan</h3>
-      <p class="confirm-modal-message" id="confirmModalMessage">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+      <h3 class="confirm-modal-title" id="confirmModalTitle">Confirm Action</h3>
+      <p class="confirm-modal-message" id="confirmModalMessage">Are you sure you want to proceed?</p>
       <div class="confirm-modal-actions">
-        <button id="btnCancelConfirm" class="btn btn-outline">Batal</button>
-        <button id="btnProceedConfirm" class="btn btn-danger">Ya, Lanjutkan</button>
+        <button id="btnCancelConfirm" class="btn btn-outline" data-i18n="confirm.cancelBtn">Cancel</button>
+        <button id="btnProceedConfirm" class="btn btn-danger" data-i18n="confirm.deleteBtn">Continue</button>
       </div>
     </div>
   </div>
@@ -466,30 +494,30 @@
             <i data-lucide="file-spreadsheet"></i>
           </div>
           <div>
-            <h3 class="modal-heading" id="importModalTitle">Preview Impor Data Excel</h3>
-            <p class="import-modal-subtitle" id="importModalSubtitle">Memeriksa data dan mendeteksi duplikasi tamu...</p>
+            <h3 class="modal-heading" id="importModalTitle" data-i18n="import.title">Import Guest Data</h3>
+            <p class="import-modal-subtitle" id="importModalSubtitle" data-i18n="import.subtitle">Column formats are automatically matched</p>
           </div>
         </div>
-        <button class="modal-close-btn" id="btnCloseImportModal" title="Tutup"><i data-lucide="x"></i></button>
+        <button class="modal-close-btn" id="btnCloseImportModal" title="Close" data-i18n-title="modal.close"><i data-lucide="x"></i></button>
       </div>
 
       <div class="modal-content import-modal-content">
         <!-- Summary Stat Cards -->
         <div class="import-summary-cards">
           <div class="import-stat-card">
-            <span class="import-stat-label">Total di Excel</span>
+            <span class="import-stat-label" data-i18n="import.statRows">Total in Excel</span>
             <span class="import-stat-val" id="importStatTotal">0</span>
-            <span class="import-stat-sub">Baris terdeteksi</span>
+            <span class="import-stat-sub" data-i18n="import.statRowsSub">Rows detected</span>
           </div>
           <div class="import-stat-card import-stat-new">
-            <span class="import-stat-label">Tamu Baru</span>
+            <span class="import-stat-label" data-i18n="import.statReady">New Guests</span>
             <span class="import-stat-val" id="importStatNew">0</span>
-            <span class="import-stat-sub">Siap ditambahkan</span>
+            <span class="import-stat-sub" data-i18n="import.statReadySub">Ready to add</span>
           </div>
           <div class="import-stat-card import-stat-dup">
-            <span class="import-stat-label">Duplikat Ditemukan</span>
+            <span class="import-stat-label" data-i18n="import.statDup">Duplicates Found</span>
             <span class="import-stat-val" id="importStatDup">0</span>
-            <span class="import-stat-sub">Dilewati otomatis</span>
+            <span class="import-stat-sub" data-i18n="import.statDupSub">Skipped automatically</span>
           </div>
         </div>
 
@@ -499,7 +527,7 @@
             <i data-lucide="alert-triangle" class="import-alert-icon"></i>
           </div>
           <div class="import-alert-text">
-            <strong>Duplikasi Terdeteksi:</strong> Ditemukan <span id="importDupAlertCount">0</span> nama tamu yang sudah ada di daftar undangan. Tamu duplikat otomatis ditandai dan dilewati agar data yang ada tidak terhapus atau tertimpa.
+            <strong data-i18n="import.dupAlertTitle">Duplicates Detected:</strong> <span id="importDupAlertText">Found <span id="importDupAlertCount">0</span> guest names already in the list. Duplicate guests are automatically marked and skipped to protect existing data.</span>
           </div>
         </div>
 
@@ -509,15 +537,15 @@
             <thead>
               <tr>
                 <th class="import-col-check">
-                  <input type="checkbox" id="selectAllNewImport" checked title="Pilih Semua Tamu Baru">
+                  <input type="checkbox" id="selectAllNewImport" checked title="Select All New Guests" data-i18n-title="import.selectAll">
                 </th>
-                <th class="import-col-num">No</th>
-                <th class="import-col-status">Status Impor</th>
-                <th class="import-col-name">Nama Tamu</th>
-                <th class="import-col-side">Pihak</th>
-                <th class="import-col-pax">Pax</th>
-                <th class="import-col-phone">Nomor WA</th>
-                <th class="import-col-note">Catatan</th>
+                <th class="import-col-num" data-i18n="import.thNo">No</th>
+                <th class="import-col-status" data-i18n="import.thStatus">Import Status</th>
+                <th class="import-col-name" data-i18n="import.thName">Guest Name</th>
+                <th class="import-col-side" data-i18n="import.thSide">Side</th>
+                <th class="import-col-pax" data-i18n="import.thPax">Pax</th>
+                <th class="import-col-phone" data-i18n="import.thPhone">WA Number</th>
+                <th class="import-col-note" data-i18n="import.thNote">Notes</th>
               </tr>
             </thead>
             <tbody id="importPreviewTableBody">
@@ -528,9 +556,9 @@
       </div>
 
       <div class="modal-bottom import-modal-bottom">
-        <button id="btnCancelImport" class="btn btn-outline">Batal</button>
+        <button id="btnCancelImport" class="btn btn-outline" data-i18n="import.cancel">Cancel</button>
         <button id="btnConfirmImport" class="btn btn-primary">
-          <i data-lucide="user-plus"></i> <span id="btnConfirmImportText">Konfirmasi Tambahkan</span>
+          <i data-lucide="user-plus"></i> <span id="btnConfirmImportText" data-i18n="import.confirm">Confirm Import</span>
         </button>
       </div>
     </div>
@@ -543,20 +571,20 @@
         <div class="modal-title-wrap">
           <div class="activity-modal-badge"><i data-lucide="history"></i></div>
           <div>
-            <h3 class="modal-title">Riwayat Aktivitas</h3>
-            <p class="modal-subtitle">Catatan perubahan status, template &amp; tamu beserta info perangkat</p>
+            <h3 class="modal-title" data-i18n="log.title">Activity History</h3>
+            <p class="modal-subtitle" data-i18n="log.subtitle">Log of status changes, templates &amp; guests with device info</p>
           </div>
         </div>
-        <button type="button" id="btnCloseActivityLogModal" class="modal-close-btn" title="Tutup Modal">
+        <button type="button" id="btnCloseActivityLogModal" class="modal-close-btn" title="Close Modal" data-i18n-title="modal.close">
           <i data-lucide="x"></i>
         </button>
       </div>
 
       <div class="modal-content activity-modal-content">
         <div class="activity-log-toolbar">
-          <span class="activity-count" id="activityLogCount">Memuat riwayat...</span>
-          <button type="button" id="btnRefreshActivityLog" class="btn-refresh-log" title="Muat Ulang Riwayat">
-            <i data-lucide="rotate-cw"></i> Segarkan
+          <span class="activity-count" id="activityLogCount">Loading history...</span>
+          <button type="button" id="btnRefreshActivityLog" class="btn-refresh-log" title="Refresh History" data-i18n-title="log.refreshTitle">
+            <i data-lucide="rotate-cw"></i> <span data-i18n="log.refresh">Refresh</span>
           </button>
         </div>
 
@@ -566,13 +594,13 @@
 
         <div class="empty-state" id="activityLogEmpty" style="display: none;">
           <div class="empty-icon-wrap"><i data-lucide="clock"></i></div>
-          <h3>Belum Ada Riwayat</h3>
-          <p>Aktivitas perubahan status, template, dan tamu akan tercatat otomatis di sini.</p>
+          <h3 data-i18n="log.emptyTitle">No Activity Yet</h3>
+          <p data-i18n="log.emptyDesc">Activity logs for status changes, templates, and guests will be recorded automatically here.</p>
         </div>
       </div>
 
       <div class="modal-bottom">
-        <button type="button" id="btnCloseActivityLogBottom" class="btn btn-outline" style="width: 100%;">Tutup</button>
+        <button type="button" id="btnCloseActivityLogBottom" class="btn btn-outline" style="width: 100%;" data-i18n="log.close">Close</button>
       </div>
     </div>
   </div>

@@ -17,6 +17,509 @@
   };
 
   // ===========================================================================
+  // Internationalization (i18n) System
+  // Default language is 'en' (English), persisted in localStorage
+  // ===========================================================================
+  const TRANSLATIONS = {
+    en: {
+      'pin.title': 'Enter Security PIN',
+      'pin.subtitle': 'Enter PIN to access the application',
+      'pin.placeholder': 'Enter PIN',
+      'pin.error': 'Incorrect PIN. Try again.',
+      'pin.unlock': 'Unlock Access',
+      'pin.verifying': 'Verifying...',
+      'pin.hint': '💍 Exclusively for Dhifa & Riefky',
+
+      'app.title': 'Viding WA Generator',
+      'app.subtitle': 'WhatsApp Link & Invitation Template Generator',
+      'app.history': 'Activity',
+      'app.historyTitle': 'View Activity History & Device Info',
+
+      'stat.totalGuests': 'Total Guests',
+      'stat.sent': 'Sent',
+      'stat.pending': 'Not Sent',
+      'stat.syncConnecting': 'Connecting...',
+      'stat.syncActive': 'Sync active 🟢',
+      'stat.syncOffline': 'Cloud Saved (Polling) 🟢',
+      'stat.syncTitle': 'Realtime synchronization status',
+      'stat.guestsSuffix': 'Guests',
+      'stat.progressGuests': 'Guests',
+
+      'config.toggleTitle': 'Data & Template Settings',
+      'config.toggleHint': 'Open/Close',
+
+      'source.title': 'Excel Data Source',
+      'source.subtitle': 'Select Excel invitation file (.xlsx / .xls)',
+      'source.dropzoneMain': 'Click or drag <strong>Excel (.xlsx / .xls)</strong> file here',
+      'source.dropzoneSub': 'Add new guests without overwriting existing data (auto duplicate check)',
+      'source.tagsTitle': 'Available Column Tags:',
+      'source.tagsDesc': 'Click tag below to insert into message',
+
+      'template.title': 'WhatsApp Message Template',
+      'template.subtitle': 'Customize message with automatic placeholders',
+      'template.presetFormal': '💍 Formal Format',
+      'template.presetCasual': '🌿 Casual Format (Friends)',
+      'template.presetSingkat': '⚡ Short Format (Reminder)',
+      'template.presetCustom': '✏️ My Custom Template',
+      'template.placeholder': 'Write invitation message format here... Use tags like [Sapaan], [Nama], [Link]',
+      'template.charsWords': '{chars} characters | {words} words',
+      'template.save': 'Save',
+      'template.saveTitle': 'Save as custom template',
+      'template.reset': 'Reset',
+      'template.resetTitle': 'Reset to initial format',
+      'template.previewTitle': 'WhatsApp Recipient Preview:',
+      'template.previewFor': 'Preview for:',
+
+      'table.title': 'Guest List & WhatsApp Generator',
+      'table.subtitle': 'Manage deliveries, copy WhatsApp links, or send directly to WhatsApp',
+      'table.progressLabel': 'Delivery Progress:',
+      'table.searchPlaceholder': 'Search name, WA, label...',
+      'table.clearSearch': 'Clear search',
+      'table.filterSideTitle': 'Filter Notes / Side',
+      'table.filterSidePrefix': 'Filter: ',
+      'table.sideAll': 'All',
+      'table.sideGroomBride': 'Wedding Couple',
+      'table.sideFamily': 'Family',
+      'table.tabAll': 'All',
+      'table.tabPending': '⏳ Not Sent',
+      'table.tabSent': '🟢 Sent',
+      'table.markAllSent': 'Mark as Sent',
+      'table.markAllSentTitle': 'Mark all displayed rows as Sent',
+      'table.resetAllSent': 'Reset Status',
+      'table.resetAllSentTitle': 'Reset all delivery statuses to Not Sent',
+      'table.thNo': 'No',
+      'table.thStatus': 'Delivery Status',
+      'table.thName': 'Guest Name & Category',
+      'table.thPhone': 'WhatsApp Number',
+      'table.thLink': 'Invitation Link',
+      'table.thActions': 'WhatsApp Action',
+      'table.emptyTitle': 'No Matching Data',
+      'table.emptyDesc': 'No guests match your current filter or search.',
+      'table.showingCount': 'Showing {count} of {total} guests',
+      'table.footerInstruction': 'Click the <strong>Status</strong> badge on any row/card to toggle between <em>Sent</em> and <em>Not Sent</em>.',
+
+      'card.copyLink': 'Copy Link',
+      'card.copyMsg': 'Copy Message',
+      'card.sendWa': 'Send WA',
+      'card.viewDetail': 'View message detail',
+      'card.deleteGuest': 'Delete',
+      'card.deleteGuestTitle': 'Delete {name}',
+      'card.statusSent': 'Sent',
+      'card.statusPending': 'Not Sent',
+      'card.toggleToPending': 'Click to mark as Not Sent',
+      'card.toggleToSent': 'Click to mark as Sent',
+      'card.withoutPhone': 'No WhatsApp Number',
+      'card.openDirect': 'Open in WhatsApp',
+      'card.markAsSent': 'Mark as Sent',
+      'card.markAsPending': 'Mark as Not Sent',
+      'card.preview': 'Preview',
+      'card.metaSide': 'Side',
+      'card.metaCategory': 'Category',
+      'card.metaNote': 'Notes',
+      'card.metaPhone': 'WhatsApp Number',
+      'card.metaInvitation': 'Invitation',
+
+      'modal.close': 'Close',
+      'modal.sendTitle': 'Send Invitation',
+      'modal.waLink': 'WhatsApp Link:',
+      'modal.invitationLink': 'Invitation Link:',
+      'modal.copyLink': 'Copy Link',
+      'modal.deleteGuest': 'Delete Guest',
+      'modal.copyText': 'Copy Message Text',
+      'modal.openWa': 'Open in WhatsApp',
+      'modal.noPhone': 'No WhatsApp Number',
+
+      'import.title': 'Import Guest Data',
+      'import.subtitle': 'Column formats are automatically matched',
+      'import.statRows': 'Total in Excel',
+      'import.statRowsSub': 'Rows detected',
+      'import.statReady': 'New Guests',
+      'import.statReadySub': 'Ready to add',
+      'import.statDup': 'Duplicates Found',
+      'import.statDupSub': 'Skipped automatically',
+      'import.dupAlertTitle': 'Duplicates Detected:',
+      'import.selectAll': 'Select All New Guests',
+      'import.thNo': 'No',
+      'import.thStatus': 'Import Status',
+      'import.thName': 'Guest Name',
+      'import.thSide': 'Side',
+      'import.thPax': 'Pax',
+      'import.thPhone': 'WA Number',
+      'import.thNote': 'Notes',
+      'import.cancel': 'Cancel',
+      'import.confirm': 'Confirm Import',
+      'import.statusNew': 'New Guest',
+      'import.statusDuplicate': 'Duplicate (Skip)',
+
+      'log.title': 'Activity History',
+      'log.subtitle': 'Log of status changes, templates & guests with device info',
+      'log.showingCount': 'Showing {count} latest activities',
+      'log.loading': 'Loading history...',
+      'log.emptyTitle': 'No Activity Yet',
+      'log.emptyDesc': 'Activity logs for status changes, templates, and guests will be recorded automatically here.',
+      'log.refresh': 'Refresh',
+      'log.refreshTitle': 'Refresh History',
+      'log.close': 'Close',
+      'log.deviceUnknown': 'Unknown Device',
+
+      'confirm.deleteTitle': 'Delete Guest?',
+      'confirm.deleteDesc': 'Are you sure you want to delete "{name}" from the guest list? This action cannot be undone.',
+      'confirm.deleteBtn': 'Yes, Delete Guest',
+      'confirm.cancelBtn': 'Cancel',
+      'confirm.clearTitle': 'Clear All Data?',
+      'confirm.clearDesc': 'All guest data will be removed from the application. Make sure to download a backup if needed.',
+      'confirm.clearBtn': 'Clear All Data',
+      'confirm.markAllSentTitle': 'Mark All as Sent?',
+      'confirm.markAllSentDesc': 'Mark all {count} currently displayed guests as Sent?',
+      'confirm.markAllSentBtn': 'Yes, Mark Sent',
+      'confirm.resetAllSentTitle': 'Reset All Delivery Statuses?',
+      'confirm.resetAllSentDesc': 'Reset delivery statuses of all {count} guests back to Not Sent?',
+      'confirm.resetAllSentBtn': 'Yes, Reset Status',
+      'confirm.resetTemplateTitle': 'Reset Template?',
+      'confirm.resetTemplateDesc': 'Are you sure you want to reset the message template to preset?',
+      'confirm.resetTemplateBtn': 'Yes, Reset',
+
+      'toast.copied': 'Copied to clipboard!',
+      'toast.linkCopied': 'WhatsApp link for {name} copied!',
+      'toast.linkCopiedSimple': 'WhatsApp link copied to clipboard!',
+      'toast.msgCopied': 'Invitation text for {name} copied!',
+      'toast.msgCopiedSimple': 'Message text copied to clipboard!',
+      'toast.openingWa': 'Opening WhatsApp for {name}...',
+      'toast.invalidPhone': 'WhatsApp number is invalid.',
+      'toast.guestDeleted': 'Guest "{name}" successfully deleted.',
+      'toast.statusUpdated': 'Status updated',
+      'toast.statusMarkedSent': 'Marked as Sent!',
+      'toast.statusMarkedPending': 'Marked as Not Sent.',
+      'toast.markedSentName': '{name} marked as Sent',
+      'toast.markedPendingName': '{name} marked as Not Sent',
+      'toast.statusReverted': 'Status for {name} reverted.',
+      'toast.undo': 'Undo',
+      'toast.templateSaved': 'Custom template saved successfully!',
+      'toast.templateReset': 'Template reset to preset.',
+      'toast.allMarkedSent': 'All displayed guests marked as Sent!',
+      'toast.allResetPending': 'All statuses reset to Not Sent!',
+      'toast.importSuccess': 'Successfully imported {count} new guests! ({dup} duplicates skipped)',
+      'toast.langChanged': 'Language switched to English',
+      'toast.noLinkToCopy': 'No link available to copy.',
+      'toast.noTextToCopy': 'No text available to copy.',
+      'toast.tagInserted': 'Tag {tag} inserted!',
+
+      'time.justNow': 'Just now',
+      'time.minAgo': '{m}m ago',
+      'time.hourAgo': '{h}h ago',
+      'time.dayAgo': '{d}d ago',
+
+      'footer.wedding': 'Wedding Invitation',
+      'footer.sync': 'Sync active 🟢',
+      'footer.syncConnecting': 'Connecting...',
+      'footer.syncOffline': 'Cloud Saved (Polling) 🟢',
+      'footer.langLabel': 'Language:'
+    },
+    id: {
+      'pin.title': 'Masukkan PIN Keamanan',
+      'pin.subtitle': 'Masukkan PIN untuk mengakses aplikasi',
+      'pin.placeholder': 'Masukkan PIN',
+      'pin.error': 'PIN salah. Coba lagi.',
+      'pin.unlock': 'Buka Akses',
+      'pin.verifying': 'Memverifikasi...',
+      'pin.hint': '💍 Hanya untuk Dhifa & Riefky',
+
+      'app.title': 'Viding WA Generator',
+      'app.subtitle': 'Generator Link WhatsApp & Template Pesan Undangan',
+      'app.history': 'Riwayat',
+      'app.historyTitle': 'Lihat Riwayat Aktivitas & Info Device',
+
+      'stat.totalGuests': 'Total Undangan',
+      'stat.sent': 'Sudah Dikirim',
+      'stat.pending': 'Belum Dikirim',
+      'stat.syncConnecting': 'Menghubungkan...',
+      'stat.syncActive': 'Sinkronisasi aktif 🟢',
+      'stat.syncOffline': 'Cloud Tersimpan (Polling) 🟢',
+      'stat.syncTitle': 'Status sinkronisasi Realtime',
+      'stat.guestsSuffix': 'Tamu',
+      'stat.progressGuests': 'Undangan',
+
+      'config.toggleTitle': 'Pengaturan Data & Template',
+      'config.toggleHint': 'Buka/Tutup',
+
+      'source.title': 'Sumber Data Excel',
+      'source.subtitle': 'Pilih file undangan Excel (.xlsx / .xls)',
+      'source.dropzoneMain': 'Klik atau seret file <strong>Excel (.xlsx / .xls)</strong> ke sini',
+      'source.dropzoneSub': 'Tambahkan tamu baru tanpa menimpa data yang ada (otomatis cek duplikat)',
+      'source.tagsTitle': 'Tag Kolom yang Tersedia:',
+      'source.tagsDesc': 'Klik tag di bawah untuk menyisipkan ke pesan',
+
+      'template.title': 'Template Pesan WhatsApp',
+      'template.subtitle': 'Sesuaikan pesan dengan placeholder otomatis',
+      'template.presetFormal': '💍 Format Resmi (Formal)',
+      'template.presetCasual': '🌿 Format Santai (Teman/Sahabat)',
+      'template.presetSingkat': '⚡ Format Singkat (Reminder)',
+      'template.presetCustom': '✏️ Template Kustom Saya',
+      'template.placeholder': 'Tuliskan format pesan undangan di sini... Gunakan tag seperti [Sapaan], [Nama], [Link]',
+      'template.charsWords': '{chars} karakter | {words} kata',
+      'template.save': 'Simpan',
+      'template.saveTitle': 'Simpan sebagai template kustom',
+      'template.reset': 'Reset',
+      'template.resetTitle': 'Kembalikan ke format awal',
+      'template.previewTitle': 'Tampilan di WhatsApp Penerima:',
+      'template.previewFor': 'Preview untuk:',
+
+      'table.title': 'Daftar Penerima Undangan & Generator WhatsApp',
+      'table.subtitle': 'Kelola pengiriman, salin link WhatsApp, atau kirim langsung ke WhatsApp',
+      'table.progressLabel': 'Progress Pengiriman:',
+      'table.searchPlaceholder': 'Cari nama, WA, label...',
+      'table.clearSearch': 'Hapus pencarian',
+      'table.filterSideTitle': 'Filter Catatan / Pihak',
+      'table.filterSidePrefix': 'Filter: ',
+      'table.sideAll': 'Semua',
+      'table.sideGroomBride': 'Pihak Pengantin',
+      'table.sideFamily': 'Keluarga',
+      'table.tabAll': 'Semua',
+      'table.tabPending': '⏳ Belum Kirim',
+      'table.tabSent': '🟢 Sudah Kirim',
+      'table.markAllSent': 'Tandai Terkirim',
+      'table.markAllSentTitle': 'Tandai seluruh baris yang tampil sebagai Terkirim',
+      'table.resetAllSent': 'Reset Status',
+      'table.resetAllSentTitle': 'Reset semua status pengiriman ke Belum Kirim',
+      'table.thNo': 'No',
+      'table.thStatus': 'Status Kirim',
+      'table.thName': 'Nama Tamu & Kategori',
+      'table.thPhone': 'Nomor WhatsApp',
+      'table.thLink': 'Link Undangan',
+      'table.thActions': 'Aksi WhatsApp',
+      'table.emptyTitle': 'Tidak Ada Data yang Sesuai',
+      'table.emptyDesc': 'Tidak ada tamu yang cocok dengan filter atau pencarian Anda saat ini.',
+      'table.showingCount': 'Menampilkan {count} dari {total} undangan',
+      'table.footerInstruction': 'Klik badge <strong>Status</strong> pada baris/kartu untuk mengubah status antara <em>Sudah Dikirim</em> dan <em>Belum Dikirim</em>.',
+
+      'card.copyLink': 'Salin Link',
+      'card.copyMsg': 'Salin Pesan',
+      'card.sendWa': 'Kirim WA',
+      'card.viewDetail': 'Lihat detail pesan',
+      'card.deleteGuest': 'Hapus',
+      'card.deleteGuestTitle': 'Hapus {name}',
+      'card.statusSent': 'Sudah Kirim',
+      'card.statusPending': 'Belum Kirim',
+      'card.toggleToPending': 'Klik untuk tandai Belum Dikirim',
+      'card.toggleToSent': 'Klik untuk tandai Sudah Dikirim',
+      'card.withoutPhone': 'Tanpa Nomor WhatsApp',
+      'card.openDirect': 'Buka di WhatsApp',
+      'card.markAsSent': 'Tandai Sudah Terkirim',
+      'card.markAsPending': 'Tandai Belum Terkirim',
+      'card.preview': 'Preview',
+      'card.metaSide': 'Pihak',
+      'card.metaCategory': 'Kategori',
+      'card.metaNote': 'Catatan',
+      'card.metaPhone': 'Nomor WA',
+      'card.metaInvitation': 'Undangan',
+
+      'modal.close': 'Tutup',
+      'modal.sendTitle': 'Kirim Undangan',
+      'modal.waLink': 'Link WhatsApp:',
+      'modal.invitationLink': 'Link Undangan:',
+      'modal.copyLink': 'Salin Link',
+      'modal.deleteGuest': 'Hapus Tamu',
+      'modal.copyText': 'Salin Teks Pesan',
+      'modal.openWa': 'Buka di WhatsApp',
+      'modal.noPhone': 'Tanpa Nomor WhatsApp',
+
+      'import.title': 'Impor Data Tamu',
+      'import.subtitle': 'Format kolom otomatis disesuaikan',
+      'import.statRows': 'Total di Excel',
+      'import.statRowsSub': 'Baris terdeteksi',
+      'import.statReady': 'Tamu Baru',
+      'import.statReadySub': 'Siap ditambahkan',
+      'import.statDup': 'Duplikat Ditemukan',
+      'import.statDupSub': 'Dilewati otomatis',
+      'import.dupAlertTitle': 'Duplikasi Terdeteksi:',
+      'import.selectAll': 'Pilih Semua Tamu Baru',
+      'import.thNo': 'No',
+      'import.thStatus': 'Status Impor',
+      'import.thName': 'Nama Tamu',
+      'import.thSide': 'Pihak',
+      'import.thPax': 'Pax',
+      'import.thPhone': 'Nomor WA',
+      'import.thNote': 'Catatan',
+      'import.cancel': 'Batal',
+      'import.confirm': 'Konfirmasi Tambahkan',
+      'import.statusNew': 'Tamu Baru',
+      'import.statusDuplicate': 'Duplikat (Lewati)',
+
+      'log.title': 'Riwayat Aktivitas',
+      'log.subtitle': 'Catatan perubahan status, template & tamu beserta info perangkat',
+      'log.showingCount': 'Menampilkan {count} aktivitas terbaru',
+      'log.loading': 'Memuat riwayat...',
+      'log.emptyTitle': 'Belum Ada Riwayat',
+      'log.emptyDesc': 'Aktivitas perubahan status, template, dan tamu akan tercatat otomatis di sini.',
+      'log.refresh': 'Segarkan',
+      'log.refreshTitle': 'Muat Ulang Riwayat',
+      'log.close': 'Tutup',
+      'log.deviceUnknown': 'Perangkat Tidak Dikenal',
+
+      'confirm.deleteTitle': 'Hapus Tamu?',
+      'confirm.deleteDesc': 'Apakah Anda yakin ingin menghapus "{name}" dari daftar undangan? Tindakan ini tidak dapat dibatalkan.',
+      'confirm.deleteBtn': 'Ya, Hapus Tamu',
+      'confirm.cancelBtn': 'Batal',
+      'confirm.clearTitle': 'Bersihkan Semua Data?',
+      'confirm.clearDesc': 'Semua data penerima undangan akan dihapus dari aplikasi. Pastikan Anda sudah mengunduh data jika masih diperlukan.',
+      'confirm.clearBtn': 'Hapus Semua Data',
+      'confirm.markAllSentTitle': 'Tandai Semua Terkirim?',
+      'confirm.markAllSentDesc': 'Tandai seluruh {count} tamu yang tampil saat ini sebagai Sudah Dikirim?',
+      'confirm.markAllSentBtn': 'Ya, Tandai Terkirim',
+      'confirm.resetAllSentTitle': 'Reset Semua Status Pengiriman?',
+      'confirm.resetAllSentDesc': 'Kembalikan status pengiriman seluruh {count} tamu ke Belum Dikirim?',
+      'confirm.resetAllSentBtn': 'Ya, Reset Status',
+      'confirm.resetTemplateTitle': 'Reset Template?',
+      'confirm.resetTemplateDesc': 'Kembalikan template pesan ke format awal?',
+      'confirm.resetTemplateBtn': 'Ya, Reset',
+
+      'toast.copied': 'Tersalin ke clipboard!',
+      'toast.linkCopied': 'Link WhatsApp untuk {name} berhasil disalin!',
+      'toast.linkCopiedSimple': 'Link WhatsApp berhasil disalin!',
+      'toast.msgCopied': 'Teks undangan untuk {name} disalin!',
+      'toast.msgCopiedSimple': 'Teks pesan berhasil disalin!',
+      'toast.openingWa': 'Membuka WhatsApp untuk {name}...',
+      'toast.invalidPhone': 'Nomor WhatsApp belum valid.',
+      'toast.guestDeleted': 'Tamu "{name}" berhasil dihapus.',
+      'toast.statusUpdated': 'Status diperbarui',
+      'toast.statusMarkedSent': 'Ditandai Sudah Dikirim!',
+      'toast.statusMarkedPending': 'Ditandai Belum Dikirim.',
+      'toast.markedSentName': '{name} ditandai Sudah Terkirim',
+      'toast.markedPendingName': '{name} ditandai Belum Terkirim',
+      'toast.statusReverted': 'Status {name} dikembalikan.',
+      'toast.undo': 'Urungkan',
+      'toast.templateSaved': 'Template kustom berhasil disimpan!',
+      'toast.templateReset': 'Template dikembalikan ke format awal.',
+      'toast.allMarkedSent': 'Semua tamu yang tampil ditandai Terkirim!',
+      'toast.allResetPending': 'Semua status direset ke Belum Kirim!',
+      'toast.importSuccess': 'Berhasil menambahkan {count} tamu baru! ({dup} duplikat dilewati)',
+      'toast.langChanged': 'Bahasa berhasil diubah ke Bahasa Indonesia',
+      'toast.noLinkToCopy': 'Tidak ada tautan untuk disalin.',
+      'toast.noTextToCopy': 'Tidak ada teks untuk disalin.',
+      'toast.tagInserted': 'Tag {tag} disisipkan!',
+
+      'time.justNow': 'Baru saja',
+      'time.minAgo': '{m} mnt lalu',
+      'time.hourAgo': '{h} jam lalu',
+      'time.dayAgo': '{d} hari lalu',
+
+      'footer.wedding': 'Undangan Pernikahan',
+      'footer.sync': 'Sinkronisasi aktif 🟢',
+      'footer.syncConnecting': 'Menghubungkan...',
+      'footer.syncOffline': 'Cloud Tersimpan (Polling) 🟢',
+      'footer.langLabel': 'Bahasa:'
+    }
+  };
+
+  let currentLang = localStorage.getItem('guesty_lang') || 'en';
+
+  function t(key, params = {}) {
+    let str = (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) ||
+              (TRANSLATIONS['en'] && TRANSLATIONS['en'][key]) ||
+              key;
+    if (params && typeof params === 'object') {
+      Object.keys(params).forEach(k => {
+        str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), params[k]);
+      });
+    }
+    return str;
+  }
+
+  function getSideFilterLabel(side) {
+    const prefix = t('table.filterSidePrefix');
+    if (side === 'all') return `${prefix}${t('table.sideAll')}`;
+    if (side === 'dhifa') return `${prefix}🌸 Dhifa`;
+    if (side === 'riefky') return `${prefix}💼 Riefky`;
+    if (side === 'abi') return `${prefix}🧔 Abi`;
+    if (side === 'umi') return `${prefix}🧕 Umi`;
+    if (side === 'papa') return `${prefix}👨 Papa`;
+    if (side === 'mama') return `${prefix}👩 Mama`;
+    return `${prefix}${t('table.sideAll')}`;
+  }
+
+  function updateSideFilterLabels() {
+    if (dom.sideFilterSelectedText) {
+      dom.sideFilterSelectedText.textContent = getSideFilterLabel(state.currentSideFilter || 'all');
+    }
+  }
+
+  function applyLanguage() {
+    document.documentElement.lang = currentLang;
+
+    // 1. data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (key) el.innerHTML = t(key);
+    });
+
+    // 2. data-i18n-placeholder
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (key) el.placeholder = t(key);
+    });
+
+    // 3. data-i18n-title
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.getAttribute('data-i18n-title');
+      if (key) el.title = t(key);
+    });
+
+    // 4. Preset dropdown options
+    if (dom.templatePresetSelect) {
+      const opts = dom.templatePresetSelect.options;
+      for (let i = 0; i < opts.length; i++) {
+        const val = opts[i].value;
+        if (val === 'formal') opts[i].textContent = t('template.presetFormal');
+        else if (val === 'casual') opts[i].textContent = t('template.presetCasual');
+        else if (val === 'singkat') opts[i].textContent = t('template.presetSingkat');
+        else if (val === 'custom') opts[i].textContent = t('template.presetCustom');
+      }
+    }
+
+    // 5. Update side filter UI
+    updateSideFilterLabels();
+
+    // 6. Update language switcher toggles
+    document.querySelectorAll('.lang-toggle-btn').forEach(btn => {
+      const isMatch = btn.dataset.lang === currentLang;
+      btn.classList.toggle('active', isMatch);
+      btn.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+    });
+
+    // 7. Update character counter
+    updateCharCounter();
+
+    // 8. Re-render dynamic components if ready
+    if (typeof setSyncStatus === 'function') setSyncStatus();
+    if (typeof updateStats === 'function') updateStats();
+    if (typeof renderTable === 'function') renderTable();
+
+    setupLucideIcons();
+  }
+
+  function setLanguage(lang) {
+    if (!TRANSLATIONS[lang]) return;
+    currentLang = lang;
+    localStorage.setItem('guesty_lang', lang);
+    applyLanguage();
+    showToast(t('toast.langChanged'), 'info');
+  }
+
+  function initLanguage() {
+    applyLanguage();
+
+    document.querySelectorAll('.lang-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const selectedLang = btn.dataset.lang;
+        if (selectedLang && selectedLang !== currentLang) {
+          setLanguage(selectedLang);
+        }
+      });
+    });
+  }
+
+  // ===========================================================================
   // State
   // ===========================================================================
   const state = {
@@ -392,18 +895,20 @@
   // ===========================================================================
   // Sync Indicator
   // ===========================================================================
+  let currentSyncStatus = 'connecting';
   function setSyncStatus(status) {
-    const states = {
-      connecting: { dot: 'sync-dot-connecting', label: 'Menghubungkan...', footer: '🔵 Menghubungkan' },
-      live: { dot: 'sync-dot-live', label: 'Realtime Aktif', footer: 'Sinkronisasi aktif 🟢' },
-      disconnected: { dot: 'sync-dot-offline', label: 'Cloud Tersimpan', footer: '🟢 Cloud Tersimpan (Polling)' }
-    };
-    const s = states[status] || states.disconnected;
-    if (dom.syncDot) dom.syncDot.className = `sync-dot ${s.dot}`;
-    if (dom.syncLabel) dom.syncLabel.textContent = s.label;
-    if (dom.mobileSyncDot) dom.mobileSyncDot.className = `sync-dot ${s.dot}`;
-    if (dom.mobileSyncLabel) dom.mobileSyncLabel.textContent = s.label;
-    if (dom.footerSyncStatus) dom.footerSyncStatus.textContent = s.footer;
+    if (status) currentSyncStatus = status;
+    const isConnecting = currentSyncStatus === 'connecting';
+    const isLive = currentSyncStatus === 'live';
+    const dot = isConnecting ? 'sync-dot-connecting' : (isLive ? 'sync-dot-live' : 'sync-dot-offline');
+    const label = isConnecting ? t('stat.syncConnecting') : (isLive ? (currentLang === 'en' ? 'Realtime Active' : 'Realtime Aktif') : (currentLang === 'en' ? 'Cloud Saved' : 'Cloud Tersimpan'));
+    const footer = isConnecting ? (currentLang === 'en' ? '🔵 Connecting' : '🔵 Menghubungkan') : (isLive ? t('footer.sync') : t('footer.syncOffline'));
+
+    if (dom.syncDot) dom.syncDot.className = `sync-dot ${dot}`;
+    if (dom.syncLabel) dom.syncLabel.textContent = label;
+    if (dom.mobileSyncDot) dom.mobileSyncDot.className = `sync-dot ${dot}`;
+    if (dom.mobileSyncLabel) dom.mobileSyncLabel.textContent = label;
+    if (dom.footerSyncStatus) dom.footerSyncStatus.textContent = footer;
   }
 
   // ===========================================================================
@@ -804,12 +1309,12 @@
     const guestName = (row['Nama'] || row['Name'] || `Tamu #${index + 1}`).trim();
 
     showCustomConfirm({
-      title: 'Hapus Tamu',
-      message: `Apakah Anda yakin ingin menghapus "${guestName}" dari daftar undangan? Tindakan ini tidak dapat dibatalkan.`,
+      title: t('confirm.deleteTitle'),
+      message: t('confirm.deleteDesc', { name: guestName }),
       icon: 'trash-2',
       theme: 'danger',
-      confirmText: 'Ya, Hapus Tamu',
-      cancelText: 'Batal',
+      confirmText: t('confirm.deleteBtn'),
+      cancelText: t('confirm.cancelBtn'),
       onConfirm: async () => {
         await deleteGuestAtIndex(index, guestName);
       }
@@ -872,7 +1377,7 @@
     updateStatsAndProgress();
     updateLivePreview();
 
-    showToast(`Tamu "${guestName}" berhasil dihapus.`, 'success');
+    showToast(t('toast.guestDeleted', { name: guestName }), 'success');
   }
 
   function loadDefaultExcelDirectly() {
@@ -1127,9 +1632,9 @@
       const tdStatus = document.createElement('td');
       tdStatus.className = 'import-col-status';
       if (item.isDuplicate) {
-        tdStatus.innerHTML = `<span class="badge-import-dup" title="${escapeHtml(item.duplicateReason)}"><i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> Duplikat</span>`;
+        tdStatus.innerHTML = `<span class="badge-import-dup" title="${escapeHtml(item.duplicateReason)}"><i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> ${t('import.statusDuplicate')}</span>`;
       } else {
-        tdStatus.innerHTML = `<span class="badge-import-new"><i data-lucide="check" style="width:12px;height:12px;"></i> Baru</span>`;
+        tdStatus.innerHTML = `<span class="badge-import-new"><i data-lucide="check" style="width:12px;height:12px;"></i> ${t('import.statusNew')}</span>`;
       }
 
       // Nama Tamu
@@ -1158,7 +1663,7 @@
       tdPhone.className = 'import-col-phone';
       tdPhone.innerHTML = item.phoneInfo.isValid
         ? `<span class="phone-valid">+${escapeHtml(item.phoneInfo.formatted)}</span>`
-        : `<span style="color:var(--slate-400);font-size:0.75rem;">Tanpa WA</span>`;
+        : `<span style="color:var(--slate-400);font-size:0.75rem;">${t('card.withoutPhone')}</span>`;
 
       // Catatan
       const tdNote = document.createElement('td');
@@ -1184,8 +1689,8 @@
     dom.btnConfirmImport.disabled = selectedNewCount === 0;
     if (dom.btnConfirmImportText) {
       dom.btnConfirmImportText.textContent = selectedNewCount > 0
-        ? `Konfirmasi Tambahkan (${selectedNewCount} Tamu Baru)`
-        : 'Tidak Ada Tamu Baru Dipilih';
+        ? `${t('import.confirm')} (${selectedNewCount})`
+        : t('import.cancel');
     }
   }
 
@@ -1246,7 +1751,7 @@
     updateStatsAndProgress();
     updateLivePreview();
 
-    showToast(`Berhasil menambahkan ${newRows.length} tamu baru! (${dupCount} duplikat dilewati)`, 'success');
+    showToast(t('toast.importSuccess', { count: newRows.length, dup: dupCount }), 'success');
   }
 
   function processRows(rows, filename) {
@@ -1327,7 +1832,7 @@
     updateCharCounter();
     updateLivePreview();
     renderTable();
-    showToast(`Tag ${tagText} disisipkan!`, 'success');
+    showToast(t('toast.tagInserted', { tag: tagText }), 'success');
   }
 
   // ===========================================================================
@@ -1440,9 +1945,10 @@
   }
 
   function updateCharCounter() {
-    const text = dom.templateInput.value;
+    if (!dom.templateInput || !dom.charCounter) return;
+    const text = dom.templateInput.value || '';
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    dom.charCounter.textContent = `${text.length} karakter | ${words} kata`;
+    dom.charCounter.textContent = t('template.charsWords', { chars: text.length, words });
   }
 
   // ===========================================================================
@@ -1455,17 +1961,17 @@
 
     if (state.rawRows.length === 0) {
       if (dom.emptyState) dom.emptyState.style.display = 'block';
-      if (dom.showingCountText) dom.showingCountText.textContent = 'Menampilkan 0 undangan';
+      if (dom.showingCountText) dom.showingCountText.textContent = t('table.showingCount', { count: 0, total: 0 });
       return;
     }
     const filtered = filterRows();
     if (filtered.length === 0) {
       dom.emptyState.style.display = 'block';
-      dom.showingCountText.textContent = '0 undangan ditemukan dari filter';
+      dom.showingCountText.textContent = t('table.emptyTitle');
       return;
     }
     dom.emptyState.style.display = 'none';
-    dom.showingCountText.textContent = `Menampilkan ${filtered.length} dari ${state.rawRows.length} undangan`;
+    dom.showingCountText.textContent = t('table.showingCount', { count: filtered.length, total: state.rawRows.length });
 
     filtered.forEach(({ row, originalIndex }) => {
       const isSent = isRowSent(row, originalIndex);
@@ -1493,14 +1999,14 @@
       btnStatus.type = 'button';
       btnStatus.className = `status-pill-btn ${isSent ? 'status-sent' : 'status-pending'}`;
       btnStatus.innerHTML = isSent
-        ? `<i data-lucide="check-circle-2" style="width:14px;height:14px;"></i> Sudah Dikirim`
-        : `<i data-lucide="clock" style="width:14px;height:14px;"></i> Belum Dikirim`;
-      btnStatus.title = isSent ? 'Klik untuk tandai Belum Dikirim' : 'Klik untuk tandai Sudah Dikirim';
+        ? `<i data-lucide="check-circle-2" style="width:14px;height:14px;"></i> ${t('card.statusSent')}`
+        : `<i data-lucide="clock" style="width:14px;height:14px;"></i> ${t('card.statusPending')}`;
+      btnStatus.title = isSent ? t('card.toggleToPending') : t('card.toggleToSent');
       btnStatus.addEventListener('click', async () => {
         const next = !isRowSent(row, originalIndex);
         await setRowSent(row, originalIndex, next);
         renderTable();
-        showToast(next ? `${guestName} ditandai Sudah Dikirim!` : `${guestName} ditandai Belum Dikirim.`, 'success');
+        showToast(next ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }), 'success');
       });
       tdStatus.appendChild(btnStatus);
 
@@ -1510,7 +2016,7 @@
       const tdName = document.createElement('td');
       tdName.className = 'col-name';
       let chips = '';
-      chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
+      chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} ${t('stat.guestsSuffix')}</span>`;
       const sideBadge = getSideBadgeHtml(side);
       if (sideBadge) chips += sideBadge;
       if (label && label !== '-' && label !== '--') chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
@@ -1520,7 +2026,7 @@
       tdPhone.className = 'col-phone phone-cell-text';
       tdPhone.innerHTML = phoneInfo.isValid
         ? `<span class="phone-valid"><i data-lucide="check" style="width:14px;height:14px;"></i> +${escapeHtml(phoneInfo.formatted)}</span>`
-        : `<span class="phone-empty"><i data-lucide="phone-off" style="width:12px;height:12px;"></i> Tanpa Nomor</span>`;
+        : `<span class="phone-empty"><i data-lucide="phone-off" style="width:12px;height:12px;"></i> ${t('card.withoutPhone')}</span>`;
 
       const tdLink = document.createElement('td');
       tdLink.className = 'col-link';
@@ -1536,7 +2042,7 @@
       const btnSend = document.createElement('button');
       btnSend.type = 'button';
       btnSend.className = 'btn-send-wa';
-      btnSend.innerHTML = `<i data-lucide="send" style="width:13px;height:13px;"></i> Kirim WA`;
+      btnSend.innerHTML = `<i data-lucide="send" style="width:13px;height:13px;"></i> ${t('card.sendWa')}`;
       if (!phoneInfo.isValid) {
         btnSend.classList.add('btn-action-disabled');
       } else {
@@ -1544,38 +2050,38 @@
           window.open(waUrl, '_blank');
           await setRowSent(row, originalIndex, true);
           renderTable();
-          showToast(`Membuka WhatsApp untuk ${guestName}...`, 'success');
+          showToast(t('toast.openingWa', { name: guestName }), 'success');
         });
       }
 
       const btnCopyLink = document.createElement('button');
       btnCopyLink.type = 'button';
       btnCopyLink.className = 'btn-copy-link';
-      btnCopyLink.innerHTML = `<i data-lucide="link" style="width:13px;height:13px;"></i> Salin Link`;
+      btnCopyLink.innerHTML = `<i data-lucide="link" style="width:13px;height:13px;"></i> ${t('card.copyLink')}`;
       if (!phoneInfo.isValid) {
         btnCopyLink.classList.add('btn-action-disabled');
       } else {
-        btnCopyLink.addEventListener('click', () => copyToClipboard(waUrl, `Link WhatsApp untuk ${guestName} berhasil disalin!`));
+        btnCopyLink.addEventListener('click', () => copyToClipboard(waUrl, t('toast.linkCopied', { name: guestName })));
       }
 
       const btnCopyMsg = document.createElement('button');
       btnCopyMsg.type = 'button';
       btnCopyMsg.className = 'btn-copy-msg';
-      btnCopyMsg.innerHTML = `<i data-lucide="copy" style="width:13px;height:13px;"></i> Salin Pesan`;
-      btnCopyMsg.addEventListener('click', () => copyToClipboard(compiledMsg, `Teks undangan untuk ${guestName} disalin!`));
+      btnCopyMsg.innerHTML = `<i data-lucide="copy" style="width:13px;height:13px;"></i> ${t('card.copyMsg')}`;
+      btnCopyMsg.addEventListener('click', () => copyToClipboard(compiledMsg, t('toast.msgCopied', { name: guestName })));
 
       const btnView = document.createElement('button');
       btnView.type = 'button';
       btnView.className = 'btn-view-preview';
       btnView.innerHTML = `<i data-lucide="eye" style="width:14px;height:14px;"></i>`;
-      btnView.title = 'Lihat detail pesan';
+      btnView.title = t('card.viewDetail');
       btnView.addEventListener('click', () => openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo));
 
       const btnDelete = document.createElement('button');
       btnDelete.type = 'button';
       btnDelete.className = 'btn-delete-row';
       btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px;height:14px;"></i>`;
-      btnDelete.title = `Hapus ${guestName}`;
+      btnDelete.title = t('card.deleteGuestTitle', { name: guestName });
       btnDelete.addEventListener('click', () => confirmDeleteGuest(originalIndex));
 
       actionsWrapper.appendChild(btnSend);
@@ -1603,7 +2109,7 @@
 
         card.innerHTML = `
           <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
-            <button type="button" class="mobile-status-btn ${isSent ? 'status-sent' : 'status-pending'}" title="${isSent ? 'Sudah Terkirim (klik untuk ubah)' : 'Belum Dikirim (klik untuk tandai terkirim)'}" aria-label="${isSent ? 'Status terkirim' : 'Status belum terkirim'}">
+            <button type="button" class="mobile-status-btn ${isSent ? 'status-sent' : 'status-pending'}" title="${isSent ? t('card.toggleToPending') : t('card.toggleToSent')}" aria-label="${isSent ? t('card.statusSent') : t('card.statusPending')}">
               <i data-lucide="${isSent ? 'check' : 'clock'}" style="width:18px;height:18px;"></i>
             </button>
             <div class="mobile-guest-header-main flex-1 min-w-0">
@@ -1612,7 +2118,7 @@
                 <span class="mobile-guest-name font-semibold truncate whitespace-nowrap">${escapeHtml(guestName)}</span>
               </div>
               <div class="mobile-guest-sub-row flex flex-wrap items-center gap-1.5 text-xs mt-1">
-                <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} Tamu</span>
+                <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} ${t('stat.guestsSuffix')}</span>
                 ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa text-xs">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky text-xs">💼 Riefky</span>` : '')}
                 ${label ? `<span class="mobile-category-badge text-xs">${escapeHtml(label)}</span>` : ''}
               </div>
@@ -1627,38 +2133,38 @@
           <div class="mobile-guest-drawer">
             <div class="mobile-drawer-inner">
               <div class="mobile-drawer-meta">
-                ${side ? `<div class="mobile-meta-item"><strong>Pihak:</strong> ${getSideBadgeHtml(side)}</div>` : ''}
-                ${label ? `<div class="mobile-meta-item"><strong>Kategori:</strong> ${escapeHtml(label)}</div>` : ''}
-                ${(note && !isNoteRedundantWithSide(note, side)) ? `<div class="mobile-meta-item"><strong>Catatan:</strong> ${escapeHtml(note)}</div>` : ''}
+                ${side ? `<div class="mobile-meta-item"><strong>${t('card.metaSide')}:</strong> ${getSideBadgeHtml(side)}</div>` : ''}
+                ${label ? `<div class="mobile-meta-item"><strong>${t('card.metaCategory')}:</strong> ${escapeHtml(label)}</div>` : ''}
+                ${(note && !isNoteRedundantWithSide(note, side)) ? `<div class="mobile-meta-item"><strong>${t('card.metaNote')}:</strong> ${escapeHtml(note)}</div>` : ''}
                 <div class="mobile-meta-item">
-                  <strong>Nomor WA:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">Tanpa WhatsApp</em>'}
+                  <strong>${t('card.metaPhone')}:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">' + t('card.withoutPhone') + '</em>'}
                 </div>
                 ${(link && link.startsWith('http')) ? `
                   <div class="mobile-meta-item">
-                    <strong>Undangan:</strong> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="mobile-meta-link">${escapeHtml(link)}</a>
+                    <strong>${t('card.metaInvitation')}:</strong> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="mobile-meta-link">${escapeHtml(link)}</a>
                   </div>
                 ` : ''}
               </div>
 
               <div class="mobile-drawer-actions">
                 <button type="button" class="btn btn-primary btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''} w-full min-h-[44px]">
-                  <i data-lucide="send"></i> Kirim WhatsApp
+                  <i data-lucide="send"></i> ${t('card.sendWa')}
                 </button>
                 <button type="button" class="btn btn-outline btn-drawer-copy-link ${(!phoneInfo.isValid && !link) ? 'btn-action-disabled' : ''} w-full min-h-[44px]">
-                  <i data-lucide="link"></i> Salin Link Undangan
+                  <i data-lucide="link"></i> ${t('card.copyLink')}
                 </button>
                 <button type="button" class="btn btn-outline btn-drawer-toggle-sent w-full min-h-[44px]">
-                  <i data-lucide="${isSent ? 'rotate-ccw' : 'check'}"></i> ${isSent ? 'Tandai Belum Terkirim' : 'Tandai Sudah Terkirim'}
+                  <i data-lucide="${isSent ? 'rotate-ccw' : 'check'}"></i> ${isSent ? t('card.markAsPending') : t('card.markAsSent')}
                 </button>
                 <div class="mobile-drawer-actions-secondary">
                   <button type="button" class="btn btn-outline btn-drawer-preview min-h-[44px]">
-                    <i data-lucide="eye"></i> Preview
+                    <i data-lucide="eye"></i> ${t('card.preview')}
                   </button>
                   <button type="button" class="btn btn-outline btn-drawer-copy-msg min-h-[44px]">
-                    <i data-lucide="copy"></i> Salin Pesan
+                    <i data-lucide="copy"></i> ${t('card.copyMsg')}
                   </button>
                   <button type="button" class="btn btn-outline-danger btn-drawer-delete min-h-[44px]">
-                    <i data-lucide="trash-2"></i> Hapus
+                    <i data-lucide="trash-2"></i> ${t('card.deleteGuest')}
                   </button>
                 </div>
               </div>
@@ -1689,14 +2195,14 @@
           await setRowSent(row, originalIndex, nextState);
           renderTable();
           showToast(
-            nextState ? `${guestName} ditandai Sudah Terkirim` : `${guestName} ditandai Belum Terkirim`,
+            nextState ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }),
             'success',
             {
-              label: 'Urungkan',
+              label: t('toast.undo'),
               onClick: async () => {
                 await setRowSent(row, originalIndex, previousState);
                 renderTable();
-                showToast(`Status ${guestName} dikembalikan.`, 'info');
+                showToast(t('toast.statusReverted', { name: guestName }), 'info');
               }
             }
           );
@@ -1727,12 +2233,12 @@
           if (targetLink) {
             btnCopyLinkMobile.addEventListener('click', (e) => {
               e.stopPropagation();
-              copyToClipboard(targetLink, `Link WhatsApp untuk ${guestName} berhasil disalin!`);
+              copyToClipboard(targetLink, t('toast.linkCopied', { name: guestName }));
             });
           } else {
             btnCopyLinkMobile.addEventListener('click', (e) => {
               e.stopPropagation();
-              showToast('Tidak ada tautan untuk disalin.', 'danger');
+              showToast(t('toast.noLinkToCopy'), 'danger');
             });
           }
         }
@@ -1741,7 +2247,7 @@
         if (btnCopyMsgMobile) {
           btnCopyMsgMobile.addEventListener('click', (e) => {
             e.stopPropagation();
-            copyToClipboard(compiledMsg, `Teks undangan untuk ${guestName} disalin!`);
+            copyToClipboard(compiledMsg, t('toast.msgCopied', { name: guestName }));
           });
         }
 
@@ -1761,12 +2267,12 @@
               window.open(waUrl, '_blank');
               await setRowSent(row, originalIndex, true);
               renderTable();
-              showToast(`Membuka WhatsApp untuk ${guestName}...`, 'success');
+              showToast(t('toast.openingWa', { name: guestName }), 'success');
             });
           } else {
             btnSend.addEventListener('click', (e) => {
               e.stopPropagation();
-              showToast('Nomor WhatsApp belum valid.', 'danger');
+              showToast(t('toast.invalidPhone'), 'danger');
             });
           }
         }
@@ -1889,25 +2395,25 @@
     dom.statTotalGuests.textContent = total;
     if (dom.statTotalPax) {
       dom.statTotalPax.classList.remove('has-skeleton');
-      dom.statTotalPax.textContent = `👥 ${totalPax} Tamu`;
+      dom.statTotalPax.textContent = `👥 ${totalPax} ${t('stat.guestsSuffix')}`;
     }
 
     dom.statSentCount.textContent = `${sentCount} (${percentage}%)`;
     if (dom.statSentPax) {
       dom.statSentPax.classList.remove('has-skeleton');
-      dom.statSentPax.textContent = `👥 ${sentPax} Tamu`;
+      dom.statSentPax.textContent = `👥 ${sentPax} ${t('stat.guestsSuffix')}`;
     }
 
     dom.statPendingCount.textContent = pendingCount;
     if (dom.statPendingPax) {
       dom.statPendingPax.classList.remove('has-skeleton');
-      dom.statPendingPax.textContent = `👥 ${pendingPax} Tamu`;
+      dom.statPendingPax.textContent = `👥 ${pendingPax} ${t('stat.guestsSuffix')}`;
     }
 
     if (dom.statWithPhone) dom.statWithPhone.textContent = withPhone;
-    if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${withPhonePax} Tamu`;
+    if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${withPhonePax} ${t('stat.guestsSuffix')}`;
 
-    dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} Undangan · ${sentPax}/${totalPax} Tamu)`;
+    dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${t('stat.progressGuests')})`;
     dom.progressBarFill.style.width = `${percentage}%`;
 
     // Status filter counters
@@ -1948,16 +2454,16 @@
     const label = (row['Label'] || '').trim();
     const link = (row['Link'] || row['link'] || row['Link Undangan'] || '').trim();
 
-    dom.modalGuestTitle.textContent = `Pesan Undangan: ${name}`;
+    dom.modalGuestTitle.textContent = `${t('modal.sendTitle')}: ${name}`;
 
-    let modalMetaHtml = `<span class="meta-chip">Undangan #${index + 1}</span>`;
-    modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${pax} Tamu</span>`;
+    let modalMetaHtml = `<span class="meta-chip">#${index + 1}</span>`;
+    modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${pax} ${t('stat.guestsSuffix')}</span>`;
     const sideBadge = getSideBadgeHtml(side);
     if (sideBadge) modalMetaHtml += sideBadge;
     if (label && label !== '-' && label !== '--') modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
     if (note && !isNoteRedundantWithSide(note, side)) modalMetaHtml += `<span class="meta-chip meta-chip-note">📝 ${escapeHtml(note)}</span>`;
-    modalMetaHtml += `<span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : 'Tanpa Nomor WA'}</span>`;
-    modalMetaHtml += `<span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? 'Sudah Dikirim' : 'Belum Dikirim'}</span>`;
+    modalMetaHtml += `<span class="meta-chip ${phoneInfo.isValid ? 'meta-chip-blue' : ''}">${phoneInfo.isValid ? 'WA: +' + phoneInfo.formatted : t('card.withoutPhone')}</span>`;
+    modalMetaHtml += `<span class="meta-chip" style="background:${isSent ? '#DCFCE7' : '#F1F5F9'};color:${isSent ? '#166534' : '#475569'};font-weight:700;">${isSent ? t('card.statusSent') : t('card.statusPending')}</span>`;
 
     dom.modalGuestInfo.innerHTML = modalMetaHtml;
 
@@ -1971,25 +2477,24 @@
     const copyUrl = (phoneInfo.isValid && waUrl) ? waUrl : link;
     const labelEl = dom.modalWaLinkInput?.closest('.modal-input-group')?.querySelector('label');
     if (labelEl) {
-      labelEl.textContent = (phoneInfo.isValid && waUrl) ? 'Link WhatsApp:' : 'Link Undangan:';
+      labelEl.textContent = (phoneInfo.isValid && waUrl) ? t('modal.waLink') : t('modal.invitationLink');
     }
 
-    dom.modalWaLinkInput.value = copyUrl || '(Link tidak tersedia)';
+    dom.modalWaLinkInput.value = copyUrl || t('modal.noPhone');
     dom.btnModalCopyLink.disabled = !copyUrl;
     dom.btnModalCopyLink.onclick = () => {
       if (!copyUrl) return;
-      const copyMsg = (phoneInfo.isValid && waUrl) ? 'Link WhatsApp berhasil disalin!' : 'Link undangan berhasil disalin!';
-      copyToClipboard(copyUrl, copyMsg);
+      copyToClipboard(copyUrl, t('toast.linkCopiedSimple'));
     };
 
-    dom.btnModalCopyText.onclick = () => copyToClipboard(compiledMsg, 'Teks pesan berhasil disalin!');
+    dom.btnModalCopyText.onclick = () => copyToClipboard(compiledMsg, t('toast.msgCopiedSimple'));
 
     if (!phoneInfo.isValid) {
       dom.btnModalSendWa.disabled = true;
-      dom.btnModalSendWa.innerHTML = '<i data-lucide="phone-off"></i> Tanpa Nomor WhatsApp';
+      dom.btnModalSendWa.innerHTML = `<i data-lucide="phone-off"></i> ${t('modal.noPhone')}`;
     } else {
       dom.btnModalSendWa.disabled = false;
-      dom.btnModalSendWa.innerHTML = '<i data-lucide="send"></i> Buka di WhatsApp';
+      dom.btnModalSendWa.innerHTML = `<i data-lucide="send"></i> ${t('modal.openWa')}`;
     }
 
     if (dom.btnModalDeleteGuest) {
@@ -2004,7 +2509,7 @@
         await setRowSent(row, index, true);
         renderTable();
         closeModal();
-        showToast(`Membuka WhatsApp untuk ${name}...`, 'success');
+        showToast(t('toast.openingWa', { name }), 'success');
       }
     };
     dom.previewModal.style.display = 'flex';
@@ -2285,7 +2790,7 @@
     dom.btnSaveCustomTemplate.addEventListener('click', async () => {
       await saveCustomTemplate(dom.templateInput.value);
       dom.templatePresetSelect.value = 'custom';
-      showToast('Template kustom berhasil disimpan!', 'success');
+      showToast(t('toast.templateSaved'), 'success');
       logActivity({
         action: 'TEMPLATE_UPDATED',
         summary: 'Menyimpan perubahan template pesan WhatsApp',
@@ -2295,12 +2800,12 @@
 
     dom.btnResetTemplate.addEventListener('click', () => {
       showCustomConfirm({
-        title: 'Reset Template Pesan?',
-        message: 'Template saat ini akan dikembalikan ke format bawaan (Formal). Perubahan kustom yang belum disimpan akan hilang.',
+        title: t('confirm.resetTemplateTitle'),
+        message: t('confirm.resetTemplateDesc'),
         icon: 'rotate-ccw',
         theme: 'danger',
-        confirmText: 'Ya, Reset Template',
-        cancelText: 'Batal',
+        confirmText: t('confirm.resetTemplateBtn'),
+        cancelText: t('confirm.cancelBtn'),
         onConfirm: () => {
           state.currentTemplate = PRESET_TEMPLATES.formal;
           dom.templatePresetSelect.value = 'formal';
@@ -2308,7 +2813,7 @@
           updateCharCounter();
           updateLivePreview();
           renderTable();
-          showToast('Template dikembalikan ke format Formal.', 'success');
+          showToast(t('toast.templateReset'), 'success');
           logActivity({
             action: 'TEMPLATE_UPDATED',
             summary: 'Mereset template pesan ke format Formal bawaan',
@@ -2348,16 +2853,16 @@
     dom.btnMarkAllSent.addEventListener('click', () => {
       const filtered = filterRows();
       if (filtered.length === 0) {
-        showToast('Tidak ada data tamu yang ditampilkan.', 'danger');
+        showToast(t('table.emptyTitle'), 'danger');
         return;
       }
       showCustomConfirm({
-        title: 'Tandai Semua Sudah Dikirim?',
-        message: `Tandai ${filtered.length} tamu yang saat ini tampil di filter sebagai "Sudah Dikirim"?`,
+        title: t('confirm.markAllSentTitle'),
+        message: t('confirm.markAllSentDesc', { count: filtered.length }),
         icon: 'check-circle-2',
         theme: 'info',
-        confirmText: `Ya, Tandai (${filtered.length})`,
-        cancelText: 'Batal',
+        confirmText: t('confirm.markAllSentBtn'),
+        cancelText: t('confirm.cancelBtn'),
         onConfirm: async () => {
           for (const { row, originalIndex } of filtered) {
             const key = getRowKey(row, originalIndex);
@@ -2371,22 +2876,22 @@
           }
           logActivity({
             action: 'STATUS_SENT',
-            summary: `Menandai ${filtered.length} tamu sebagai Sudah Dikirim`,
+            summary: `Marked ${filtered.length} guests as Sent`,
             details: { count: filtered.length }
           });
-          showToast(`${filtered.length} tamu ditandai Sudah Dikirim!`, 'success');
+          showToast(t('toast.allMarkedSent'), 'success');
         }
       });
     });
 
     dom.btnResetAllSent.addEventListener('click', () => {
       showCustomConfirm({
-        title: 'Reset Semua Status Pengiriman?',
-        message: 'Apakah Anda yakin ingin mengembalikan seluruh status tamu menjadi "Belum Dikirim"? Data status yang tersimpan di cloud juga akan dihapus.',
+        title: t('confirm.resetAllSentTitle'),
+        message: t('confirm.resetAllSentDesc', { count: state.rawRows.length }),
         icon: 'rotate-ccw',
         theme: 'danger',
-        confirmText: 'Ya, Reset Semua',
-        cancelText: 'Batal',
+        confirmText: t('confirm.resetAllSentBtn'),
+        cancelText: t('confirm.cancelBtn'),
         onConfirm: async () => {
           state.sentStatuses = {};
           renderTable();
@@ -2399,10 +2904,10 @@
           }
           logActivity({
             action: 'STATUS_RESET',
-            summary: 'Mereset semua status pengiriman ke Belum Kirim',
+            summary: 'Reset all delivery statuses to Not Sent',
             details: {}
           });
-          showToast('Semua status pengiriman berhasil di-reset.', 'success');
+          showToast(t('toast.allResetPending'), 'success');
         }
       });
     });
@@ -2605,6 +3110,7 @@
   // Entry Point
   // ===========================================================================
   function bootstrap() {
+    initLanguage();
     setupPinGate();
   }
 
