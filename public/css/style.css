@@ -981,7 +981,7 @@ textarea#templateInput {
 }
 
 .col-name {
-  min-width: 200px;
+  min-width: 270px;
 }
 
 .col-phone {
@@ -1042,18 +1042,22 @@ textarea#templateInput {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .guest-name-text {
   font-weight: 700;
   color: var(--slate-900);
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .guest-meta-tags {
   display: flex;
   gap: 5px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .meta-chip {
@@ -1064,6 +1068,11 @@ textarea#templateInput {
   background: var(--slate-100);
   border: 1px solid var(--slate-200);
   color: var(--slate-700);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .meta-chip-blue {
@@ -2979,8 +2988,16 @@ textarea#templateInput {
   display: flex;
   align-items: center;
   gap: 5px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding-left: 2px;
+  white-space: nowrap;
+}
+
+.mobile-guest-sub-row::-webkit-scrollbar {
+  display: none;
 }
 
 .mobile-pax-badge {
@@ -2995,6 +3012,7 @@ textarea#templateInput {
   border-radius: var(--radius-full);
   white-space: nowrap;
   line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .mobile-category-badge {
@@ -3006,9 +3024,12 @@ textarea#templateInput {
   border-radius: var(--radius-full);
   white-space: nowrap;
   line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .mobile-side-badge {
+  flex-shrink: 0;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 3px;

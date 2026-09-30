@@ -42,6 +42,7 @@
       'stat.syncActive': 'Sync active 🟢',
       'stat.syncOffline': 'Cloud Saved (Polling) 🟢',
       'stat.syncTitle': 'Realtime synchronization status',
+      'stat.guestSingular': 'Guest',
       'stat.guestsSuffix': 'Guests',
       'stat.progressGuests': 'Guests',
 
@@ -239,6 +240,7 @@
       'stat.syncActive': 'Sinkronisasi aktif 🟢',
       'stat.syncOffline': 'Cloud Tersimpan (Polling) 🟢',
       'stat.syncTitle': 'Status sinkronisasi Realtime',
+      'stat.guestSingular': 'Tamu',
       'stat.guestsSuffix': 'Tamu',
       'stat.progressGuests': 'Undangan',
 
@@ -429,6 +431,11 @@
       });
     }
     return str;
+  }
+
+  function formatPaxText(pax) {
+    const count = parseInt(pax, 10) || 0;
+    return `${count} ${count === 1 ? t('stat.guestSingular') : t('stat.guestsSuffix')}`;
   }
 
   function getSideFilterLabel(side) {
@@ -2070,7 +2077,7 @@
       const tdName = document.createElement('td');
       tdName.className = 'col-name';
       let chips = '';
-      chips += `<span class="meta-chip meta-chip-blue">👥 ${pax} ${t('stat.guestsSuffix')}</span>`;
+      chips += `<span class="meta-chip meta-chip-blue">👥 ${formatPaxText(pax)}</span>`;
       const sideBadge = getSideBadgeHtml(side);
       if (sideBadge) chips += sideBadge;
       if (label && label !== '-' && label !== '--') chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
@@ -2172,7 +2179,7 @@
                 <span class="mobile-guest-name font-semibold truncate whitespace-nowrap">${escapeHtml(guestName)}</span>
               </div>
               <div class="mobile-guest-sub-row flex flex-wrap items-center gap-1.5 text-xs mt-1">
-                <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${pax} ${t('stat.guestsSuffix')}</span>
+                <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${formatPaxText(pax)}</span>
                 ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa text-xs">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky text-xs">💼 Riefky</span>` : '')}
                 ${label ? `<span class="mobile-category-badge text-xs">${escapeHtml(label)}</span>` : ''}
               </div>
@@ -2449,25 +2456,25 @@
     dom.statTotalGuests.textContent = total;
     if (dom.statTotalPax) {
       dom.statTotalPax.classList.remove('has-skeleton');
-      dom.statTotalPax.textContent = `👥 ${totalPax} ${t('stat.guestsSuffix')}`;
+      dom.statTotalPax.textContent = `👥 ${formatPaxText(totalPax)}`;
     }
 
     dom.statSentCount.textContent = `${sentCount} (${percentage}%)`;
     if (dom.statSentPax) {
       dom.statSentPax.classList.remove('has-skeleton');
-      dom.statSentPax.textContent = `👥 ${sentPax} ${t('stat.guestsSuffix')}`;
+      dom.statSentPax.textContent = `👥 ${formatPaxText(sentPax)}`;
     }
 
     dom.statPendingCount.textContent = pendingCount;
     if (dom.statPendingPax) {
       dom.statPendingPax.classList.remove('has-skeleton');
-      dom.statPendingPax.textContent = `👥 ${pendingPax} ${t('stat.guestsSuffix')}`;
+      dom.statPendingPax.textContent = `👥 ${formatPaxText(pendingPax)}`;
     }
 
     if (dom.statWithPhone) dom.statWithPhone.textContent = withPhone;
-    if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${withPhonePax} ${t('stat.guestsSuffix')}`;
+    if (dom.statWithPhonePax) dom.statWithPhonePax.textContent = `👥 ${formatPaxText(withPhonePax)}`;
 
-    dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${t('stat.progressGuests')})`;
+    dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${totalPax === 1 ? t('stat.guestSingular') : t('stat.progressGuests')})`;
     dom.progressBarFill.style.width = `${percentage}%`;
 
     // Status filter counters — based on side+search only (NOT the active status pill)
@@ -2528,7 +2535,7 @@
     dom.modalGuestTitle.textContent = `${t('modal.sendTitle')}: ${name}`;
 
     let modalMetaHtml = `<span class="meta-chip">#${index + 1}</span>`;
-    modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${pax} ${t('stat.guestsSuffix')}</span>`;
+    modalMetaHtml += `<span class="meta-chip meta-chip-blue">👥 ${formatPaxText(pax)}</span>`;
     const sideBadge = getSideBadgeHtml(side);
     if (sideBadge) modalMetaHtml += sideBadge;
     if (label && label !== '-' && label !== '--') modalMetaHtml += `<span class="meta-chip">${escapeHtml(label)}</span>`;
