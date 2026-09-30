@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // PUT /api/sent-status — batch replace all statuses
+  // PUT /api/sent-status — batch replace all statuses without wiping the table
   // Body: { sentStatuses: { [key]: boolean } }
   if (req.method === 'PUT') {
     const { sentStatuses } = req.body || {};
@@ -73,22 +73,28 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'sentStatuses object required' });
     }
 
-    // Delete existing statuses
-    await supabase.from('sent_statuses').delete().neq('guest_key', '__none__');
-
-    const entries = Object.keys(sentStatuses).filter(k => sentStatuses[k]);
-    if (entries.length > 0) {
-      const insertData = entries.map(guest_key => ({
+    const activeKeys = Object.keys(sentStatuses).filter(k => sentStatuses[k]);
+    if (activeKeys.length > 0) {
+      const upsertData = activeKeys.map(guest_key => ({
         guest_key,
         is_sent: true,
         sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }));
-      const { error } = await supabase.from('sent_statuses').insert(insertData);
-      if (error) return res.status(500).json({ error: error.message });
+      const { error: upsertErr } = await supabase.from('sent_statuses').upsert(upsertData, { onConflict: 'guest_key' });
+      if (upsertErr) return res.status(500).json({ error: upsertErr.message });
     }
 
-    return res.status(200).json({ ok: true, count: entries.length });
+    // Clean up obsolete keys
+    const { data: existingData } = await supabase.from('sent_statuses').select('guest_key');
+    const activeSet = new Set(activeKeys);
+    const toDelete = (existingData || []).map(r => r.guest_key).filter(k => !activeSet.has(k));
+    if (toDelete.length > 0) {
+      const { error: delErr } = await supabase.from('sent_statuses').delete().in('guest_key', toDelete);
+      if (delErr) return res.status(500).json({ error: delErr.message });
+    }
+
+    return res.status(200).json({ ok: true, count: activeKeys.length });
   }
 
   // DELETE /api/sent-status — reset all statuses

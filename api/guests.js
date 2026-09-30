@@ -34,9 +34,9 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ guests: data });
   }
 
-  // POST /api/guests — replace entire guest list with new parsed rows
+  // POST /api/guests — replace entire guest list with new parsed rows, and optionally update sent statuses atomically
   if (req.method === 'POST') {
-    const { rows } = req.body || {};
+    const { rows, sentStatuses } = req.body || {};
     if (!rows || !Array.isArray(rows)) {
       return res.status(400).json({ error: 'rows array required' });
     }
@@ -48,6 +48,28 @@ module.exports = async function handler(req, res) {
       const insertData = rows.map((raw_data, row_index) => ({ row_index, raw_data }));
       const { error } = await supabase.from('guests').insert(insertData);
       if (error) return res.status(500).json({ error: error.message });
+    }
+
+    // If sentStatuses provided, sync sent_statuses atomically in the same operation
+    if (sentStatuses && typeof sentStatuses === 'object') {
+      const activeKeys = Object.keys(sentStatuses).filter(k => sentStatuses[k]);
+      if (activeKeys.length > 0) {
+        const upsertData = activeKeys.map(guest_key => ({
+          guest_key,
+          is_sent: true,
+          sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        await supabase.from('sent_statuses').upsert(upsertData, { onConflict: 'guest_key' });
+      }
+
+      // Remove obsolete keys only (avoid full wipe)
+      const { data: existingData } = await supabase.from('sent_statuses').select('guest_key');
+      const activeSet = new Set(activeKeys);
+      const toDelete = (existingData || []).map(r => r.guest_key).filter(k => !activeSet.has(k));
+      if (toDelete.length > 0) {
+        await supabase.from('sent_statuses').delete().in('guest_key', toDelete);
+      }
     }
 
     return res.status(200).json({ ok: true, count: rows.length });

@@ -1062,6 +1062,17 @@
   let realtimeChannel = null;
   let realtimePollingTimer = null;
   let isSyncingFromCloud = false;
+  let isLocalMutationInProgress = false;
+  let renderDebounceTimer = null;
+
+  function scheduleTableRender() {
+    if (renderDebounceTimer) cancelAnimationFrame(renderDebounceTimer);
+    renderDebounceTimer = requestAnimationFrame(() => {
+      updateStatsAndProgress();
+      renderTable();
+      renderDebounceTimer = null;
+    });
+  }
 
   function broadcastRealtimeEvent(event, payload = {}) {
     if (realtimeChannel && typeof realtimeChannel.send === 'function') {
@@ -1078,12 +1089,19 @@
   }
 
   async function reloadGuestsAndStatusesFromCloud() {
-    if (isSyncingFromCloud) return;
+    if (isSyncingFromCloud || isLocalMutationInProgress) return;
     isSyncingFromCloud = true;
     try {
-      // 1. Fetch latest guests from cloud
-      const guestsRes = await apiGet('/api/guests');
-      const guests = guestsRes.guests;
+      // Fetch both guests and sent-status concurrently so they are updated together without a blip
+      const [guestsRes, statusRes] = await Promise.all([
+        apiGet('/api/guests').catch(err => { console.warn(err); return null; }),
+        apiGet('/api/sent-status').catch(err => { console.warn(err); return null; })
+      ]);
+
+      let hasChanged = false;
+
+      // 1. Process guests
+      const guests = guestsRes ? guestsRes.guests : null;
       if (Array.isArray(guests)) {
         const newRows = guests.map(g => g.raw_data);
         const currentJson = JSON.stringify(state.rawRows);
@@ -1102,22 +1120,25 @@
           }
           updateFileStatusBar(null, state.rawRows.length);
           populatePreviewGuestDropdown();
-          renderTable();
-          updateStatsAndProgress();
           updateLivePreview();
+          hasChanged = true;
         }
       }
 
-      // 2. Fetch latest sent statuses from cloud
-      const statusRes = await apiGet('/api/sent-status');
+      // 2. Process sent statuses
       if (statusRes && statusRes.sentStatuses) {
         const currentStatusesJson = JSON.stringify(state.sentStatuses);
         const newStatusesJson = JSON.stringify(statusRes.sentStatuses);
         if (currentStatusesJson !== newStatusesJson) {
           state.sentStatuses = statusRes.sentStatuses;
-          updateStatsAndProgress();
-          renderTable();
+          hasChanged = true;
         }
+      }
+
+      // Render only once when both rows and statuses are aligned
+      if (hasChanged) {
+        updateStatsAndProgress();
+        renderTable();
       }
     } catch (e) {
       console.warn('Cloud sync error:', e);
@@ -1170,6 +1191,7 @@
     // A. Listen for Instant Multi-Device Broadcast Events
     realtimeChannel
       .on('broadcast', { event: 'guest_list_updated' }, async () => {
+        if (isLocalMutationInProgress) return;
         await reloadGuestsAndStatusesFromCloud();
         showToast('👥 Daftar tamu diperbarui secara realtime', 'info');
       })
@@ -1189,6 +1211,7 @@
         }
       })
       .on('broadcast', { event: 'bulk_status_updated' }, (msg) => {
+        if (isLocalMutationInProgress) return;
         const data = msg.payload || msg;
         if (data && data.sentStatuses) {
           state.sentStatuses = data.sentStatuses;
@@ -1222,6 +1245,7 @@
         schema: 'public',
         table: 'guests'
       }, async () => {
+        if (isLocalMutationInProgress) return;
         await reloadGuestsAndStatusesFromCloud();
       });
 
@@ -1232,6 +1256,7 @@
         schema: 'public',
         table: 'sent_statuses'
       }, (payload) => {
+        if (isLocalMutationInProgress) return;
         const { new: newRow, old: oldRow, eventType } = payload;
         if (eventType === 'DELETE' && oldRow?.guest_key) {
           delete state.sentStatuses[oldRow.guest_key];
@@ -1242,8 +1267,7 @@
             delete state.sentStatuses[newRow.guest_key];
           }
         }
-        updateStatsAndProgress();
-        renderTable();
+        scheduleTableRender();
       })
       .on('postgres_changes', {
         event: 'INSERT',
@@ -1309,10 +1333,16 @@
     return false;
   }
 
-  async function saveGuestsToSupabase(rows) {
+  async function saveGuestsToSupabase(rows, sentStatuses = null, shouldBroadcast = true) {
     try {
-      await apiPost('/api/guests', { rows });
-      broadcastRealtimeEvent('guest_list_updated', { action: 'update', count: rows.length });
+      const payload = { rows };
+      if (sentStatuses && typeof sentStatuses === 'object') {
+        payload.sentStatuses = sentStatuses;
+      }
+      await apiPost('/api/guests', payload);
+      if (shouldBroadcast) {
+        broadcastRealtimeEvent('guest_list_updated', { action: 'update', count: rows.length });
+      }
     } catch (e) {
       console.warn('Failed to save guests to Supabase', e);
     }
@@ -1342,14 +1372,17 @@
   async function deleteGuestAtIndex(index, guestName) {
     if (index < 0 || index >= state.rawRows.length) return;
 
-    // Preserve isSent status for each row
+    // 1. Lock mutations to ignore any incoming CDC echo events or background polling
+    isLocalMutationInProgress = true;
+
+    // 2. Preserve isSent status for each row
     const isSentArray = state.rawRows.map((r, i) => isRowSent(r, i));
 
-    // Remove row
+    // 3. Remove row from local state
     state.rawRows.splice(index, 1);
     isSentArray.splice(index, 1);
 
-    // Rebuild sentStatuses mapped to new shifted row keys
+    // 4. Rebuild sentStatuses mapped to new shifted row keys
     const newSentStatuses = {};
     state.rawRows.forEach((r, i) => {
       if (isSentArray[i]) {
@@ -1358,27 +1391,34 @@
     });
     state.sentStatuses = newSentStatuses;
 
-    // Adjust expanded index if mobile card was expanded
+    // 5. Adjust expanded index if mobile card was expanded
     if (state.expandedGuestIndex === index) {
       state.expandedGuestIndex = null;
     } else if (state.expandedGuestIndex !== null && state.expandedGuestIndex > index) {
       state.expandedGuestIndex--;
     }
 
-    // Adjust preview selection if deleted guest was selected
+    // 6. Adjust preview selection if deleted guest was selected
     if (state.selectedPreviewIndex >= state.rawRows.length) {
       state.selectedPreviewIndex = Math.max(0, state.rawRows.length - 1);
     }
 
-    // Persist changes to Supabase
+    // 7. OPTIMISTIC INSTANT UI UPDATE: smooth, immediate, zero blip
+    updateFileStatusBar(null, state.rawRows.length);
+    populatePreviewGuestDropdown();
+    renderTable();
+    updateStatsAndProgress();
+    updateLivePreview();
+    showToast(t('toast.guestDeleted', { name: guestName }), 'success');
+
+    // 8. Persist atomically to Supabase (guests + sentStatuses in a single request)
     try {
-      await saveGuestsToSupabase(state.rawRows);
-      await apiPut('/api/sent-status', { sentStatuses: state.sentStatuses });
+      await saveGuestsToSupabase(state.rawRows, state.sentStatuses, false);
     } catch (e) {
       console.warn('Failed to sync guest deletion to cloud', e);
     }
 
-    // Broadcast updates to all other connected devices instantly
+    // 9. Broadcast updates to all other connected devices
     broadcastRealtimeEvent('guest_list_updated', { action: 'delete', name: guestName, count: state.rawRows.length });
     broadcastRealtimeEvent('bulk_status_updated', { sentStatuses: state.sentStatuses });
 
@@ -1388,14 +1428,10 @@
       details: { guestName }
     });
 
-    // Update UI components
-    updateFileStatusBar(null, state.rawRows.length);
-    populatePreviewGuestDropdown();
-    renderTable();
-    updateStatsAndProgress();
-    updateLivePreview();
-
-    showToast(t('toast.guestDeleted', { name: guestName }), 'success');
+    // 10. Keep mutation lock active for a grace period so incoming echo CDC events don't flicker
+    setTimeout(() => {
+      isLocalMutationInProgress = false;
+    }, 2000);
   }
 
   function loadDefaultExcelDirectly() {
