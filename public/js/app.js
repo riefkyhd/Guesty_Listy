@@ -2820,18 +2820,18 @@
       }
     });
 
-    // RSVP Attendance Summary Bar (Single Compact Strip)
+    // RSVP Attendance Summary Bar (Single Compact Strip, responsive text on desktop)
     if (dom.rsvpSummaryAttending) {
-      dom.rsvpSummaryAttending.textContent = `🟢 ${rsvpAttending} (${rsvpAttendingPax} Pax)`;
+      dom.rsvpSummaryAttending.innerHTML = `🟢 ${rsvpAttending} <span class="rsvp-text-label">${t('rsvp.attending')}</span> (${rsvpAttendingPax} Pax)`;
     }
     if (dom.rsvpSummaryDeclined) {
-      dom.rsvpSummaryDeclined.textContent = `🔴 ${rsvpDeclined}`;
+      dom.rsvpSummaryDeclined.innerHTML = `🔴 ${rsvpDeclined} <span class="rsvp-text-label">${t('rsvp.declined')}</span>`;
     }
     if (dom.rsvpSummaryMaybe) {
-      dom.rsvpSummaryMaybe.textContent = `🟡 ${rsvpMaybe}`;
+      dom.rsvpSummaryMaybe.innerHTML = `🟡 ${rsvpMaybe} <span class="rsvp-text-label">${t('rsvp.maybe')}</span>`;
     }
     if (dom.rsvpSummaryPending) {
-      dom.rsvpSummaryPending.textContent = `⚪ ${rsvpPending}`;
+      dom.rsvpSummaryPending.innerHTML = `⚪ ${rsvpPending} <span class="rsvp-text-label">${t('rsvp.pending')}</span>`;
     }
 
     // Pihak / Notes filter counters (global totals per side)

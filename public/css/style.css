@@ -706,6 +706,11 @@ textarea#templateInput {
   user-select: none;
 }
 
+.rsvp-text-label {
+  display: inline;
+  margin: 0 1px;
+}
+
 .rsvp-pill-attending {
   color: #166534;
 }
@@ -3790,6 +3795,11 @@ textarea#templateInput {
 
   .progress-track {
     height: 5px;
+  }
+
+  /* On mobile, hide RSVP text labels so it stays strictly on 1 compact line */
+  .rsvp-text-label {
+    display: none !important;
   }
 
   /* Table Toolbar */
