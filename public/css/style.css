@@ -1630,6 +1630,48 @@ textarea#templateInput {
   transform: none !important;
 }
 
+/* Button Loading State & Spinner */
+.btn.btn-loading,
+.btn.btn-loading:disabled,
+.btn.btn-loading[disabled] {
+  opacity: 0.85 !important;
+  cursor: wait !important;
+  pointer-events: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.btn-primary.btn-loading,
+.btn-primary.btn-loading:disabled,
+.btn-primary.btn-loading[disabled] {
+  background: #16A34A !important;
+  border-color: #16A34A !important;
+  color: #FFFFFF !important;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: btn-spinner-rotate 0.65s linear infinite;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+@keyframes btn-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .btn:active:not(:disabled) {
   transform: scale(0.97);
   filter: brightness(0.93);

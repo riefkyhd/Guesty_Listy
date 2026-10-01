@@ -149,6 +149,7 @@
       'import.thNote': 'Notes',
       'import.cancel': 'Cancel',
       'import.confirm': 'Confirm Import',
+      'import.importing': 'Importing...',
       'import.statusNew': 'New Guest',
       'import.statusDuplicate': 'Duplicate (Skip)',
 
@@ -347,6 +348,7 @@
       'import.thNote': 'Catatan',
       'import.cancel': 'Batal',
       'import.confirm': 'Konfirmasi Tambahkan',
+      'import.importing': 'Mengimpor...',
       'import.statusNew': 'Tamu Baru',
       'import.statusDuplicate': 'Duplikat (Lewati)',
 
@@ -1505,6 +1507,7 @@
   // ===========================================================================
   let pendingImportItems = [];
   let pendingImportFilename = '';
+  let isImporting = false;
 
   function extractGuestIdentity(row, phoneCol) {
     const rawName = (row['Nama'] || row['Name'] || '').toString().trim();
@@ -1746,17 +1749,31 @@
   }
 
   function updateConfirmImportButton() {
+    if (isImporting) return;
     const selectedNewCount = pendingImportItems.filter(i => i.selected && !i.isDuplicate).length;
     dom.btnConfirmImport.disabled = selectedNewCount === 0;
-    if (dom.btnConfirmImportText) {
-      dom.btnConfirmImportText.textContent = selectedNewCount > 0
+    dom.btnConfirmImport.classList.remove('btn-loading');
+    dom.btnConfirmImport.innerHTML = `<i data-lucide="user-plus"></i> <span id="btnConfirmImportText">${
+      selectedNewCount > 0
         ? `${t('import.confirm')} (${selectedNewCount})`
-        : t('import.cancel');
-    }
+        : t('import.cancel')
+    }</span>`;
+    dom.btnConfirmImportText = document.getElementById('btnConfirmImportText');
+    setupLucideIcons();
   }
 
   function closeImportPreviewModal() {
     if (!dom.importPreviewModal) return;
+    isImporting = false;
+    if (dom.btnCancelImport) dom.btnCancelImport.disabled = false;
+    if (dom.btnCloseImportModal) dom.btnCloseImportModal.disabled = false;
+    if (dom.btnConfirmImport) {
+      dom.btnConfirmImport.classList.remove('btn-loading');
+      dom.btnConfirmImport.disabled = false;
+      dom.btnConfirmImport.innerHTML = `<i data-lucide="user-plus"></i> <span id="btnConfirmImportText">${t('import.confirm')}</span>`;
+      dom.btnConfirmImportText = document.getElementById('btnConfirmImportText');
+      setupLucideIcons();
+    }
     closeModalWithAnimation(dom.importPreviewModal, () => {
       pendingImportItems = [];
       if (dom.fileInput) dom.fileInput.value = '';
@@ -1764,6 +1781,8 @@
   }
 
   async function confirmAndAppendNewGuests() {
+    if (isImporting) return;
+
     const itemsToAdd = pendingImportItems.filter(i => i.selected && !i.isDuplicate);
     if (itemsToAdd.length === 0) {
       showToast('Tidak ada tamu baru yang dipilih untuk ditambahkan.', 'danger');
@@ -1771,48 +1790,69 @@
       return;
     }
 
-    const dupCount = pendingImportItems.filter(i => i.isDuplicate).length;
-    const newRows = itemsToAdd.map(i => i.row);
-
-    // NON-DESTRUCTIVE APPEND: existing guests are completely preserved!
-    state.rawRows = [...state.rawRows, ...newRows];
-
-    // Merge columns to ensure any new columns from the new Excel are included
-    if (newRows.length > 0 && Object.keys(newRows[0] || {}).length > 0) {
-      const existingCols = new Set(state.columns);
-      Object.keys(newRows[0]).forEach(c => existingCols.add(c));
-      state.columns = Array.from(existingCols);
-      if (!state.phoneColumn) state.phoneColumn = detectPhoneColumn(state.columns);
-      populatePhoneColSelector();
-      renderTagChips();
+    // Set loading state immediately & disable button to prevent double clicks
+    isImporting = true;
+    if (dom.btnConfirmImport) {
+      dom.btnConfirmImport.disabled = true;
+      dom.btnConfirmImport.classList.add('btn-loading');
+      dom.btnConfirmImport.innerHTML = `<span class="btn-spinner"></span> <span>${t('import.importing')}</span>`;
     }
+    if (dom.btnCancelImport) dom.btnCancelImport.disabled = true;
+    if (dom.btnCloseImportModal) dom.btnCloseImportModal.disabled = true;
 
-    // Save updated full list to Supabase
-    await saveGuestsToSupabase(state.rawRows);
+    try {
+      const dupCount = pendingImportItems.filter(i => i.isDuplicate).length;
+      const newRows = itemsToAdd.map(i => i.row);
 
-    // Broadcast realtime event to all connected devices
-    broadcastRealtimeEvent('guest_list_updated', {
-      action: 'import',
-      count: state.rawRows.length,
-      added: newRows.length
-    });
+      // NON-DESTRUCTIVE APPEND: existing guests are completely preserved!
+      state.rawRows = [...state.rawRows, ...newRows];
 
-    logActivity({
-      action: 'GUESTS_IMPORTED',
-      summary: `Menambahkan ${newRows.length} tamu baru dari file Excel`,
-      details: { count: newRows.length, fileName: pendingImportFilename }
-    });
+      // Merge columns to ensure any new columns from the new Excel are included
+      if (newRows.length > 0 && Object.keys(newRows[0] || {}).length > 0) {
+        const existingCols = new Set(state.columns);
+        Object.keys(newRows[0]).forEach(c => existingCols.add(c));
+        state.columns = Array.from(existingCols);
+        if (!state.phoneColumn) state.phoneColumn = detectPhoneColumn(state.columns);
+        populatePhoneColSelector();
+        renderTagChips();
+      }
 
-    closeImportPreviewModal();
+      // Save updated full list to Supabase
+      await saveGuestsToSupabase(state.rawRows);
 
-    // Re-render UI
-    updateFileStatusBar(pendingImportFilename, state.rawRows.length);
-    populatePreviewGuestDropdown();
-    renderTable();
-    updateStatsAndProgress();
-    updateLivePreview();
+      // Broadcast realtime event to all connected devices
+      broadcastRealtimeEvent('guest_list_updated', {
+        action: 'import',
+        count: state.rawRows.length,
+        added: newRows.length
+      });
 
-    showToast(t('toast.importSuccess', { count: newRows.length, dup: dupCount }), 'success');
+      logActivity({
+        action: 'GUESTS_IMPORTED',
+        summary: `Menambahkan ${newRows.length} tamu baru dari file Excel`,
+        details: { count: newRows.length, fileName: pendingImportFilename }
+      });
+
+      closeImportPreviewModal();
+
+      // Re-render UI
+      updateFileStatusBar(pendingImportFilename, state.rawRows.length);
+      populatePreviewGuestDropdown();
+      renderTable();
+      updateStatsAndProgress();
+      updateLivePreview();
+
+      showToast(t('toast.importSuccess', { count: newRows.length, dup: dupCount }), 'success');
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast('Gagal mengimpor data tamu. Silakan coba lagi.', 'danger');
+      isImporting = false;
+      if (dom.btnCancelImport) dom.btnCancelImport.disabled = false;
+      if (dom.btnCloseImportModal) dom.btnCloseImportModal.disabled = false;
+      updateConfirmImportButton();
+    } finally {
+      isImporting = false;
+    }
   }
 
   function processRows(rows, filename) {
