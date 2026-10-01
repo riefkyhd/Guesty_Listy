@@ -81,6 +81,10 @@
       'table.sideAll': 'All',
       'table.sideGroomBride': 'Wedding Couple',
       'table.sideFamily': 'Family',
+      'table.filterRsvpTitle': 'Filter RSVP Attendance',
+      'table.filterRsvpPrefix': 'RSVP: ',
+      'table.rsvpAll': 'All RSVP',
+      'table.rsvpSummaryTitle': 'RSVP:',
       'table.tabAll': 'All',
       'table.tabPending': '⏳ Not Sent',
       'table.tabSent': '🟢 Sent',
@@ -90,6 +94,7 @@
       'table.resetAllSentTitle': 'Reset all delivery statuses to Not Sent',
       'table.thNo': 'No',
       'table.thStatus': 'Delivery Status',
+      'table.thRsvp': 'RSVP Status',
       'table.thName': 'Guest Name & Category',
       'table.thPhone': 'WhatsApp Number',
       'table.thLink': 'Invitation Link',
@@ -98,6 +103,11 @@
       'table.emptyDesc': 'No guests match your current filter or search.',
       'table.showingCount': 'Showing {count} of {total} guests',
       'table.footerInstruction': 'Click the <strong>Status</strong> badge on any row/card to toggle between <em>Sent</em> and <em>Not Sent</em>.',
+
+      'rsvp.attending': 'Attending',
+      'rsvp.declined': 'Declined',
+      'rsvp.maybe': 'Maybe',
+      'rsvp.pending': 'Pending',
 
       'card.copyLink': 'Copy Link',
       'card.copyMsg': 'Copy Message',
@@ -119,6 +129,7 @@
       'card.metaNote': 'Notes',
       'card.metaPhone': 'WhatsApp Number',
       'card.metaInvitation': 'Invitation',
+      'card.metaRsvp': 'RSVP',
 
       'modal.close': 'Close',
       'modal.sendTitle': 'Send Invitation',
@@ -194,6 +205,7 @@
       'toast.statusMarkedPending': 'Marked as Not Sent.',
       'toast.markedSentName': '{name} marked as Sent',
       'toast.markedPendingName': '{name} marked as Not Sent',
+      'toast.rsvpUpdated': 'RSVP for {name} updated to {status}',
       'toast.statusReverted': 'Status for {name} reverted.',
       'toast.undo': 'Undo',
       'toast.templateSaved': 'Custom template saved successfully!',
@@ -280,6 +292,10 @@
       'table.sideAll': 'Semua',
       'table.sideGroomBride': 'Pihak Pengantin',
       'table.sideFamily': 'Keluarga',
+      'table.filterRsvpTitle': 'Filter Kehadiran RSVP',
+      'table.filterRsvpPrefix': 'RSVP: ',
+      'table.rsvpAll': 'Semua RSVP',
+      'table.rsvpSummaryTitle': 'RSVP:',
       'table.tabAll': 'Semua',
       'table.tabPending': '⏳ Belum Kirim',
       'table.tabSent': '🟢 Sudah Kirim',
@@ -289,6 +305,7 @@
       'table.resetAllSentTitle': 'Reset semua status pengiriman ke Belum Kirim',
       'table.thNo': 'No',
       'table.thStatus': 'Status Kirim',
+      'table.thRsvp': 'Status RSVP',
       'table.thName': 'Nama Tamu & Kategori',
       'table.thPhone': 'Nomor WhatsApp',
       'table.thLink': 'Link Undangan',
@@ -297,6 +314,11 @@
       'table.emptyDesc': 'Tidak ada tamu yang cocok dengan filter atau pencarian Anda saat ini.',
       'table.showingCount': 'Menampilkan {count} dari {total} undangan',
       'table.footerInstruction': 'Klik badge <strong>Status</strong> pada baris/kartu untuk mengubah status antara <em>Sudah Dikirim</em> dan <em>Belum Dikirim</em>.',
+
+      'rsvp.attending': 'Hadir',
+      'rsvp.declined': 'Tidak Hadir',
+      'rsvp.maybe': 'Ragu-ragu',
+      'rsvp.pending': 'Belum Respons',
 
       'card.copyLink': 'Salin Link',
       'card.copyMsg': 'Salin Pesan',
@@ -318,6 +340,7 @@
       'card.metaNote': 'Catatan',
       'card.metaPhone': 'Nomor WA',
       'card.metaInvitation': 'Undangan',
+      'card.metaRsvp': 'RSVP',
 
       'modal.close': 'Tutup',
       'modal.sendTitle': 'Kirim Undangan',
@@ -393,6 +416,7 @@
       'toast.statusMarkedPending': 'Ditandai Belum Dikirim.',
       'toast.markedSentName': '{name} ditandai Sudah Terkirim',
       'toast.markedPendingName': '{name} ditandai Belum Terkirim',
+      'toast.rsvpUpdated': 'Status RSVP {name} diperbarui ke {status}',
       'toast.statusReverted': 'Status {name} dikembalikan.',
       'toast.undo': 'Urungkan',
       'toast.templateSaved': 'Template kustom berhasil disimpan!',
@@ -458,6 +482,22 @@
     }
   }
 
+  function getRsvpFilterLabel(rsvp) {
+    const prefix = t('table.filterRsvpPrefix');
+    if (rsvp === 'all') return `${prefix}${t('table.rsvpAll')}`;
+    if (rsvp === 'attending') return `${prefix}🟢 ${t('rsvp.attending')}`;
+    if (rsvp === 'declined') return `${prefix}🔴 ${t('rsvp.declined')}`;
+    if (rsvp === 'maybe') return `${prefix}🟡 ${t('rsvp.maybe')}`;
+    if (rsvp === 'pending') return `${prefix}⚪ ${t('rsvp.pending')}`;
+    return `${prefix}${t('table.rsvpAll')}`;
+  }
+
+  function updateRsvpFilterLabels() {
+    if (dom.rsvpFilterSelectedText) {
+      dom.rsvpFilterSelectedText.textContent = getRsvpFilterLabel(state.currentRsvpFilter || 'all');
+    }
+  }
+
   function applyLanguage() {
     document.documentElement.lang = currentLang;
 
@@ -491,8 +531,9 @@
       }
     }
 
-    // 5. Update side filter UI
+    // 5. Update side & RSVP filter UI
     updateSideFilterLabels();
+    updateRsvpFilterLabels();
 
     // 6. Update language switcher toggles
     document.querySelectorAll('.lang-toggle-btn').forEach(btn => {
@@ -543,9 +584,11 @@
     phoneColumn: '',
     currentFilter: 'all',
     currentSideFilter: 'all',
+    currentRsvpFilter: 'all',
     searchQuery: '',
     selectedPreviewIndex: 0,
     sentStatuses: {},
+    rsvpStatuses: {},
     currentTemplate: '',
     expandedGuestIndex: null
   };
@@ -584,6 +627,15 @@
     btnSideFilterDropdown: document.getElementById('btnSideFilterDropdown'),
     sideFilterDropdownMenu: document.getElementById('sideFilterDropdownMenu'),
     sideFilterSelectedText: document.getElementById('sideFilterSelectedText'),
+    rsvpDropdownContainer: document.getElementById('rsvpDropdownContainer'),
+    btnRsvpFilterDropdown: document.getElementById('btnRsvpFilterDropdown'),
+    rsvpFilterDropdownMenu: document.getElementById('rsvpFilterDropdownMenu'),
+    rsvpFilterSelectedText: document.getElementById('rsvpFilterSelectedText'),
+    rsvpSummaryBar: document.getElementById('rsvpSummaryBar'),
+    rsvpSummaryAttending: document.getElementById('rsvpSummaryAttending'),
+    rsvpSummaryDeclined: document.getElementById('rsvpSummaryDeclined'),
+    rsvpSummaryMaybe: document.getElementById('rsvpSummaryMaybe'),
+    rsvpSummaryPending: document.getElementById('rsvpSummaryPending'),
     btnMarkAllSent: document.getElementById('btnMarkAllSent'),
     btnResetAllSent: document.getElementById('btnResetAllSent'),
     recipientsTableBody: document.getElementById('recipientsTableBody'),
@@ -1066,6 +1118,72 @@
   }
 
   // ===========================================================================
+  // RSVP Attendance Status (Supabase-backed)
+  // ===========================================================================
+  const RSVP_STATES = {
+    attending: { id: 'attending', emoji: '🟢', labelKey: 'rsvp.attending', class: 'rsvp-attending' },
+    declined: { id: 'declined', emoji: '🔴', labelKey: 'rsvp.declined', class: 'rsvp-declined' },
+    maybe: { id: 'maybe', emoji: '🟡', labelKey: 'rsvp.maybe', class: 'rsvp-maybe' },
+    pending: { id: 'pending', emoji: '⚪', labelKey: 'rsvp.pending', class: 'rsvp-pending' }
+  };
+
+  async function loadRsvpStatuses() {
+    try {
+      const data = await apiGet('/api/rsvp-status');
+      state.rsvpStatuses = data.rsvpStatuses || {};
+    } catch (e) {
+      console.warn('Could not load RSVP statuses from Supabase', e);
+      state.rsvpStatuses = {};
+    }
+  }
+
+  function getRowRsvp(row, index) {
+    const key = getRowKey(row, index);
+    return state.rsvpStatuses[key] || 'pending';
+  }
+
+  function getRsvpConfig(status) {
+    return RSVP_STATES[status] || RSVP_STATES.pending;
+  }
+
+  function getRsvpLabel(status) {
+    const cfg = getRsvpConfig(status);
+    return `${cfg.emoji} ${t(cfg.labelKey)}`;
+  }
+
+  async function persistRsvpStatus(guestKey, status) {
+    try {
+      await apiPost('/api/rsvp-status', { guestKey, status });
+    } catch (e) {
+      console.warn('Failed to sync RSVP status to Supabase', e);
+    }
+    if (status && status !== 'pending') {
+      state.rsvpStatuses[guestKey] = status;
+    } else {
+      delete state.rsvpStatuses[guestKey];
+    }
+  }
+
+  async function setRowRsvp(row, index, newStatus) {
+    const key = getRowKey(row, index);
+    const guestName = (row['Nama'] || row['Name'] || 'Tamu').trim();
+    if (newStatus && newStatus !== 'pending') {
+      state.rsvpStatuses[key] = newStatus;
+    } else {
+      delete state.rsvpStatuses[key];
+    }
+    updateStatsAndProgress();
+    renderTable();
+    broadcastRealtimeEvent('rsvp_status_updated', { guestKey: key, status: newStatus, guestName });
+    await persistRsvpStatus(key, newStatus);
+    logActivity({
+      action: 'RSVP_STATUS_UPDATED',
+      summary: `RSVP "${guestName}" diubah ke ${getRsvpLabel(newStatus)}`,
+      details: { guestKey: key, guestName, status: newStatus }
+    });
+  }
+
+  // ===========================================================================
   // Supabase Realtime Subscription & Multi-Device Sync
   // ===========================================================================
   let realtimeChannel = null;
@@ -1101,10 +1219,11 @@
     if (isSyncingFromCloud || isLocalMutationInProgress) return;
     isSyncingFromCloud = true;
     try {
-      // Fetch both guests and sent-status concurrently so they are updated together without a blip
-      const [guestsRes, statusRes] = await Promise.all([
+      // Fetch guests, sent-status, and rsvp-status concurrently so they are updated together without a blip
+      const [guestsRes, statusRes, rsvpRes] = await Promise.all([
         apiGet('/api/guests').catch(err => { console.warn(err); return null; }),
-        apiGet('/api/sent-status').catch(err => { console.warn(err); return null; })
+        apiGet('/api/sent-status').catch(err => { console.warn(err); return null; }),
+        apiGet('/api/rsvp-status').catch(err => { console.warn(err); return null; })
       ]);
 
       let hasChanged = false;
@@ -1144,7 +1263,17 @@
         }
       }
 
-      // Render only once when both rows and statuses are aligned
+      // 3. Process RSVP statuses
+      if (rsvpRes && rsvpRes.rsvpStatuses) {
+        const currentRsvpJson = JSON.stringify(state.rsvpStatuses);
+        const newRsvpJson = JSON.stringify(rsvpRes.rsvpStatuses);
+        if (currentRsvpJson !== newRsvpJson) {
+          state.rsvpStatuses = rsvpRes.rsvpStatuses;
+          hasChanged = true;
+        }
+      }
+
+      // Render only once when rows, sent-statuses, and rsvp-statuses are aligned
       if (hasChanged) {
         updateStatsAndProgress();
         renderTable();
@@ -1241,6 +1370,22 @@
           showToast('📝 Template pesan kustom diperbarui secara realtime', 'info');
         }
       })
+      .on('broadcast', { event: 'rsvp_status_updated' }, (msg) => {
+        const data = msg.payload || msg;
+        if (data && data.guestKey) {
+          if (data.status && data.status !== 'pending') {
+            state.rsvpStatuses[data.guestKey] = data.status;
+          } else {
+            delete state.rsvpStatuses[data.guestKey];
+          }
+          updateStatsAndProgress();
+          renderTable();
+          const guestName = data.guestName || getGuestNameByKey(data.guestKey) || 'Tamu';
+          const rsvpLabel = getRsvpLabel(data.status || 'pending');
+          showToast(`📋 RSVP '${guestName}' diubah ke ${rsvpLabel}`, 'success');
+          highlightRealtimeRow(data.guestKey);
+        }
+      })
       .on('broadcast', { event: 'activity_logged' }, () => {
         if (dom.activityLogModal && dom.activityLogModal.style.display !== 'none') {
           loadActivityLogs();
@@ -1274,6 +1419,24 @@
             state.sentStatuses[newRow.guest_key] = true;
           } else {
             delete state.sentStatuses[newRow.guest_key];
+          }
+        }
+        scheduleTableRender();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'rsvp_statuses'
+      }, (payload) => {
+        if (isLocalMutationInProgress) return;
+        const { new: newRow, old: oldRow, eventType } = payload;
+        if (eventType === 'DELETE' && oldRow?.guest_key) {
+          delete state.rsvpStatuses[oldRow.guest_key];
+        } else if (newRow?.guest_key) {
+          if (newRow.status && newRow.status !== 'pending') {
+            state.rsvpStatuses[newRow.guest_key] = newRow.status;
+          } else {
+            delete state.rsvpStatuses[newRow.guest_key];
           }
         }
         scheduleTableRender();
@@ -1342,11 +1505,14 @@
     return false;
   }
 
-  async function saveGuestsToSupabase(rows, sentStatuses = null, shouldBroadcast = true) {
+  async function saveGuestsToSupabase(rows, sentStatuses = null, shouldBroadcast = true, rsvpStatuses = null) {
     try {
       const payload = { rows };
       if (sentStatuses && typeof sentStatuses === 'object') {
         payload.sentStatuses = sentStatuses;
+      }
+      if (rsvpStatuses && typeof rsvpStatuses === 'object') {
+        payload.rsvpStatuses = rsvpStatuses;
       }
       await apiPost('/api/guests', payload);
       if (shouldBroadcast) {
@@ -1384,21 +1550,28 @@
     // 1. Lock mutations to ignore any incoming CDC echo events or background polling
     isLocalMutationInProgress = true;
 
-    // 2. Preserve isSent status for each row
+    // 2. Preserve isSent and RSVP status for each row
     const isSentArray = state.rawRows.map((r, i) => isRowSent(r, i));
+    const rsvpArray = state.rawRows.map((r, i) => getRowRsvp(r, i));
 
     // 3. Remove row from local state
     state.rawRows.splice(index, 1);
     isSentArray.splice(index, 1);
+    rsvpArray.splice(index, 1);
 
-    // 4. Rebuild sentStatuses mapped to new shifted row keys
+    // 4. Rebuild sentStatuses and rsvpStatuses mapped to new shifted row keys
     const newSentStatuses = {};
+    const newRsvpStatuses = {};
     state.rawRows.forEach((r, i) => {
       if (isSentArray[i]) {
         newSentStatuses[getRowKey(r, i)] = true;
       }
+      if (rsvpArray[i] && rsvpArray[i] !== 'pending') {
+        newRsvpStatuses[getRowKey(r, i)] = rsvpArray[i];
+      }
     });
     state.sentStatuses = newSentStatuses;
+    state.rsvpStatuses = newRsvpStatuses;
 
     // 5. Adjust expanded index if mobile card was expanded
     if (state.expandedGuestIndex === index) {
@@ -1420,9 +1593,9 @@
     updateLivePreview();
     showToast(t('toast.guestDeleted', { name: guestName }), 'success');
 
-    // 8. Persist atomically to Supabase (guests + sentStatuses in a single request)
+    // 8. Persist atomically to Supabase (guests + sentStatuses + rsvpStatuses in a single request)
     try {
-      await saveGuestsToSupabase(state.rawRows, state.sentStatuses, false);
+      await saveGuestsToSupabase(state.rawRows, state.sentStatuses, false, state.rsvpStatuses);
     } catch (e) {
       console.warn('Failed to sync guest deletion to cloud', e);
     }
@@ -2111,6 +2284,58 @@
       });
       tdStatus.appendChild(btnStatus);
 
+      // Desktop RSVP Status Cell with Interactive Micro-Menu
+      const currentRsvp = getRowRsvp(row, originalIndex);
+      const rsvpConfig = getRsvpConfig(currentRsvp);
+
+      const tdRsvp = document.createElement('td');
+      tdRsvp.className = 'col-rsvp';
+      const rsvpWrapper = document.createElement('div');
+      rsvpWrapper.className = 'rsvp-cell-wrapper';
+
+      const btnRsvp = document.createElement('button');
+      btnRsvp.type = 'button';
+      btnRsvp.className = `status-rsvp-btn ${rsvpConfig.class}`;
+      btnRsvp.innerHTML = `<span>${rsvpConfig.emoji} ${t(rsvpConfig.labelKey)}</span> <i data-lucide="chevron-down" class="rsvp-arrow-icon" style="width:11px;height:11px;"></i>`;
+      btnRsvp.title = 'Click to change RSVP status';
+
+      const microMenu = document.createElement('div');
+      microMenu.className = 'rsvp-micro-menu';
+      microMenu.style.display = 'none';
+
+      ['attending', 'declined', 'maybe', 'pending'].forEach(st => {
+        const itemCfg = getRsvpConfig(st);
+        const itemBtn = document.createElement('button');
+        itemBtn.type = 'button';
+        itemBtn.className = `rsvp-menu-item ${st === currentRsvp ? 'active' : ''}`;
+        itemBtn.innerHTML = `<span>${itemCfg.emoji}</span> <span>${t(itemCfg.labelKey)}</span>`;
+        itemBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          microMenu.style.display = 'none';
+          rsvpWrapper.classList.remove('is-open');
+          await setRowRsvp(row, originalIndex, st);
+          showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
+        });
+        microMenu.appendChild(itemBtn);
+      });
+
+      btnRsvp.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.rsvp-micro-menu').forEach(m => {
+          if (m !== microMenu) {
+            m.style.display = 'none';
+            m.parentElement?.classList.remove('is-open');
+          }
+        });
+        const isOpen = microMenu.style.display !== 'none';
+        microMenu.style.display = isOpen ? 'none' : 'flex';
+        rsvpWrapper.classList.toggle('is-open', !isOpen);
+      });
+
+      rsvpWrapper.appendChild(btnRsvp);
+      rsvpWrapper.appendChild(microMenu);
+      tdRsvp.appendChild(rsvpWrapper);
+
       const side = getGuestSide(row);
       const note = getGuestNote(row);
 
@@ -2194,6 +2419,7 @@
 
       tr.appendChild(tdNo);
       tr.appendChild(tdStatus);
+      tr.appendChild(tdRsvp);
       tr.appendChild(tdName);
       tr.appendChild(tdPhone);
       tr.appendChild(tdLink);
@@ -2220,6 +2446,7 @@
               </div>
               <div class="mobile-guest-sub-row flex flex-wrap items-center gap-1.5 text-xs mt-1">
                 <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${formatPaxText(pax)}</span>
+                <span class="mobile-rsvp-badge ${rsvpConfig.class}">${rsvpConfig.emoji} ${t(rsvpConfig.labelKey)}</span>
                 ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa text-xs">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky text-xs">💼 Riefky</span>` : '')}
                 ${label ? `<span class="mobile-category-badge text-xs">${escapeHtml(label)}</span>` : ''}
               </div>
@@ -2245,6 +2472,17 @@
                     <strong>${t('card.metaInvitation')}:</strong> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="mobile-meta-link">${escapeHtml(link)}</a>
                   </div>
                 ` : ''}
+              </div>
+
+              <!-- Mobile Drawer RSVP Segmented Control -->
+              <div class="mobile-rsvp-section">
+                <div class="mobile-rsvp-label"><i data-lucide="calendar-check" style="width:13px;height:13px;"></i> <span>${t('table.thRsvp')}</span></div>
+                <div class="mobile-rsvp-segmented">
+                  <button type="button" class="mobile-rsvp-seg-btn rsvp-attending ${currentRsvp === 'attending' ? 'active' : ''}" data-rsvp="attending">🟢 ${t('rsvp.attending')}</button>
+                  <button type="button" class="mobile-rsvp-seg-btn rsvp-declined ${currentRsvp === 'declined' ? 'active' : ''}" data-rsvp="declined">🔴 ${t('rsvp.declined')}</button>
+                  <button type="button" class="mobile-rsvp-seg-btn rsvp-maybe ${currentRsvp === 'maybe' ? 'active' : ''}" data-rsvp="maybe">🟡 ${t('rsvp.maybe')}</button>
+                  <button type="button" class="mobile-rsvp-seg-btn rsvp-pending ${currentRsvp === 'pending' ? 'active' : ''}" data-rsvp="pending">⚪ ${t('rsvp.pending')}</button>
+                </div>
               </div>
 
               <div class="mobile-drawer-actions">
@@ -2318,6 +2556,17 @@
         if (btnToggleSent) {
           btnToggleSent.addEventListener('click', handleStatusToggle);
         }
+
+        // Mobile Drawer RSVP Segmented Buttons
+        card.querySelectorAll('.mobile-rsvp-seg-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const st = btn.dataset.rsvp;
+            await setRowRsvp(row, originalIndex, st);
+            const itemCfg = getRsvpConfig(st);
+            showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
+          });
+        });
 
         // Drawer buttons
         const btnPrev = card.querySelector('.btn-drawer-preview');
@@ -2437,10 +2686,12 @@
     const q = state.searchQuery.toLowerCase().trim();
     const filter = state.currentFilter;
     const sideFilter = state.currentSideFilter || 'all';
+    const rsvpFilter = state.currentRsvpFilter || 'all';
 
     return state.rawRows.map((row, originalIndex) => ({ row, originalIndex })).filter(({ row, originalIndex }) => {
       const phoneInfo = normalizePhone(row[state.phoneColumn]);
       const isSent = isRowSent(row, originalIndex);
+      const rsvp = getRowRsvp(row, originalIndex);
       const name = (row['Nama'] || row['Name'] || '').toString().toLowerCase();
       const label = (row['Label'] || '').toString().toLowerCase();
       const phone = (row[state.phoneColumn] || '').toString().toLowerCase();
@@ -2450,11 +2701,14 @@
       // 1. Pihak / Notes filter (Dhifa, Riefky, Abi, Umi, Papa, Mama)
       if (sideFilter !== 'all' && guestSide !== sideFilter) return false;
 
-      // 2. Status filter
+      // 2. Delivery Status filter
       if (filter === 'pending' && isSent) return false;
       if (filter === 'sent' && !isSent) return false;
 
-      // 3. Search query
+      // 3. RSVP Attendance filter
+      if (rsvpFilter !== 'all' && rsvp !== rsvpFilter) return false;
+
+      // 4. Search query
       if (q) return name.includes(q) || label.includes(q) || phone.includes(q) || note.includes(q);
       return true;
     });
@@ -2465,6 +2719,10 @@
     let withPhone = 0, sentCount = 0;
     let totalPax = 0, sentPax = 0, withPhonePax = 0;
     let dhifaCount = 0, riefkyCount = 0, abiCount = 0, umiCount = 0, papaCount = 0, mamaCount = 0;
+    let rsvpAttending = 0, rsvpAttendingPax = 0;
+    let rsvpDeclined = 0;
+    let rsvpMaybe = 0;
+    let rsvpPending = 0;
 
     state.rawRows.forEach((row, idx) => {
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
@@ -2487,6 +2745,18 @@
       else if (side === 'umi') umiCount++;
       else if (side === 'papa') papaCount++;
       else if (side === 'mama') mamaCount++;
+
+      const rsvp = getRowRsvp(row, idx);
+      if (rsvp === 'attending') {
+        rsvpAttending++;
+        rsvpAttendingPax += pax;
+      } else if (rsvp === 'declined') {
+        rsvpDeclined++;
+      } else if (rsvp === 'maybe') {
+        rsvpMaybe++;
+      } else {
+        rsvpPending++;
+      }
     });
 
     const pendingCount = total - sentCount;
@@ -2516,6 +2786,20 @@
 
     dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${totalPax === 1 ? t('stat.guestSingular') : t('stat.progressGuests')})`;
     dom.progressBarFill.style.width = `${percentage}%`;
+
+    // RSVP Attendance Summary Bar
+    if (dom.rsvpSummaryAttending) {
+      dom.rsvpSummaryAttending.textContent = `🟢 ${rsvpAttending} ${t('rsvp.attending')} (${rsvpAttendingPax} Pax)`;
+    }
+    if (dom.rsvpSummaryDeclined) {
+      dom.rsvpSummaryDeclined.textContent = `🔴 ${rsvpDeclined} ${t('rsvp.declined')}`;
+    }
+    if (dom.rsvpSummaryMaybe) {
+      dom.rsvpSummaryMaybe.textContent = `🟡 ${rsvpMaybe} ${t('rsvp.maybe')}`;
+    }
+    if (dom.rsvpSummaryPending) {
+      dom.rsvpSummaryPending.textContent = `⚪ ${rsvpPending} ${t('rsvp.pending')}`;
+    }
 
     // Status filter counters — based on side+search only (NOT the active status pill)
     // so All=Sent+NotSent always holds and switching pills doesn't zero-out the other tab
@@ -2557,6 +2841,18 @@
     if (countSideUmiEl) countSideUmiEl.textContent = umiCount;
     if (countSidePapaEl) countSidePapaEl.textContent = papaCount;
     if (countSideMamaEl) countSideMamaEl.textContent = mamaCount;
+
+    // RSVP Filter Dropdown counters
+    const countRsvpAllEl = document.getElementById('countRsvpAll');
+    const countRsvpAttendingEl = document.getElementById('countRsvpAttending');
+    const countRsvpDeclinedEl = document.getElementById('countRsvpDeclined');
+    const countRsvpMaybeEl = document.getElementById('countRsvpMaybe');
+    const countRsvpPendingEl = document.getElementById('countRsvpPending');
+    if (countRsvpAllEl) countRsvpAllEl.textContent = total;
+    if (countRsvpAttendingEl) countRsvpAttendingEl.textContent = rsvpAttending;
+    if (countRsvpDeclinedEl) countRsvpDeclinedEl.textContent = rsvpDeclined;
+    if (countRsvpMaybeEl) countRsvpMaybeEl.textContent = rsvpMaybe;
+    if (countRsvpPendingEl) countRsvpPendingEl.textContent = rsvpPending;
   }
 
   // ===========================================================================
@@ -2739,6 +3035,8 @@
         return { icon: 'user-plus', class: 'activity-icon-upload' };
       case 'GUEST_DELETED':
         return { icon: 'trash-2', class: 'activity-icon-delete' };
+      case 'RSVP_STATUS_UPDATED':
+        return { icon: 'calendar-check', class: 'activity-icon-status-sent' };
       default:
         return { icon: 'activity', class: 'activity-icon-status-sent' };
     }
@@ -3047,6 +3345,10 @@
     if (dom.btnSideFilterDropdown && dom.sideFilterDropdownMenu) {
       dom.btnSideFilterDropdown.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (dom.rsvpFilterDropdownMenu) {
+          dom.rsvpFilterDropdownMenu.style.display = 'none';
+          if (dom.btnRsvpFilterDropdown) dom.btnRsvpFilterDropdown.setAttribute('aria-expanded', 'false');
+        }
         const isHidden = dom.sideFilterDropdownMenu.style.display === 'none';
         dom.sideFilterDropdownMenu.style.display = isHidden ? 'flex' : 'none';
         dom.btnSideFilterDropdown.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
@@ -3087,6 +3389,69 @@
         if (e.key === 'Escape' && dom.sideFilterDropdownMenu.style.display !== 'none') {
           dom.sideFilterDropdownMenu.style.display = 'none';
           if (dom.btnSideFilterDropdown) dom.btnSideFilterDropdown.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // RSVP Attendance Filter Dropdown
+    if (dom.btnRsvpFilterDropdown && dom.rsvpFilterDropdownMenu) {
+      dom.btnRsvpFilterDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (dom.sideFilterDropdownMenu) {
+          dom.sideFilterDropdownMenu.style.display = 'none';
+          if (dom.btnSideFilterDropdown) dom.btnSideFilterDropdown.setAttribute('aria-expanded', 'false');
+        }
+        const isHidden = dom.rsvpFilterDropdownMenu.style.display === 'none';
+        dom.rsvpFilterDropdownMenu.style.display = isHidden ? 'flex' : 'none';
+        dom.btnRsvpFilterDropdown.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      });
+
+      dom.rsvpFilterDropdownMenu.addEventListener('click', (e) => {
+        const option = e.target.closest('.filter-dropdown-option');
+        if (!option) return;
+        const selectedRsvp = option.dataset.rsvp || 'all';
+        state.currentRsvpFilter = selectedRsvp;
+
+        dom.rsvpFilterDropdownMenu.querySelectorAll('.filter-dropdown-option').forEach(opt => {
+          opt.classList.toggle('active', opt === option);
+        });
+
+        updateRsvpFilterLabels();
+
+        if (dom.btnRsvpFilterDropdown) {
+          dom.btnRsvpFilterDropdown.classList.toggle('has-filter', selectedRsvp !== 'all');
+        }
+
+        dom.rsvpFilterDropdownMenu.style.display = 'none';
+        dom.btnRsvpFilterDropdown.setAttribute('aria-expanded', 'false');
+        renderTable();
+        updateStatsAndProgress();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (dom.rsvpDropdownContainer && !dom.rsvpDropdownContainer.contains(e.target)) {
+          dom.rsvpFilterDropdownMenu.style.display = 'none';
+          if (dom.btnRsvpFilterDropdown) dom.btnRsvpFilterDropdown.setAttribute('aria-expanded', 'false');
+        }
+        // Also close any desktop rsvp-micro-menu when clicking outside
+        if (!e.target.closest('.rsvp-cell-wrapper')) {
+          document.querySelectorAll('.rsvp-micro-menu').forEach(m => {
+            m.style.display = 'none';
+            m.parentElement?.classList.remove('is-open');
+          });
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (dom.rsvpFilterDropdownMenu.style.display !== 'none') {
+            dom.rsvpFilterDropdownMenu.style.display = 'none';
+            if (dom.btnRsvpFilterDropdown) dom.btnRsvpFilterDropdown.setAttribute('aria-expanded', 'false');
+          }
+          document.querySelectorAll('.rsvp-micro-menu').forEach(m => {
+            m.style.display = 'none';
+            m.parentElement?.classList.remove('is-open');
+          });
         }
       });
     }
@@ -3206,8 +3571,11 @@
     dom.templateInput.value = state.currentTemplate;
     updateCharCounter();
 
-    // Load sent statuses
-    await loadSentStatuses();
+    // Load sent statuses & RSVP statuses concurrently
+    await Promise.all([
+      loadSentStatuses(),
+      loadRsvpStatuses()
+    ]);
 
     // Load guests: prefer Supabase, fall back to default Excel directly
     try {

@@ -660,6 +660,56 @@ textarea#templateInput {
   transition: width 0.3s ease;
 }
 
+/* RSVP Attendance Summary Bar */
+.rsvp-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.73rem;
+  margin-top: 4px;
+}
+
+.rsvp-summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--slate-600);
+}
+
+.rsvp-metric-pill {
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.71rem;
+  white-space: nowrap;
+}
+
+.rsvp-pill-attending {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+}
+
+.rsvp-pill-declined {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+.rsvp-pill-maybe {
+  background: #FEF3C7;
+  color: #854D0E;
+  border: 1px solid #FDE047;
+}
+
+.rsvp-pill-pending {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #CBD5E1;
+}
+
 /* Table Toolbar */
 .table-toolbar {
   padding: 12px 20px;
@@ -980,6 +1030,11 @@ textarea#templateInput {
   width: 150px;
 }
 
+.col-rsvp {
+  width: 145px;
+  min-width: 140px;
+}
+
 .col-name {
   min-width: 270px;
 }
@@ -1035,6 +1090,114 @@ textarea#templateInput {
   background: #E2E8F0;
   color: #0F172A;
   transform: translateY(-1px);
+}
+
+/* RSVP Status Badges (Desktop Interactive Micro-Menu) */
+.rsvp-cell-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.status-rsvp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.status-rsvp-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.status-rsvp-btn.rsvp-attending {
+  background: #DCFCE7;
+  border-color: #86EFAC;
+  color: #166534;
+}
+
+.status-rsvp-btn.rsvp-declined {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  color: #991B1B;
+}
+
+.status-rsvp-btn.rsvp-maybe {
+  background: #FEF3C7;
+  border-color: #FDE047;
+  color: #854D0E;
+}
+
+.status-rsvp-btn.rsvp-pending {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+  color: #64748B;
+}
+
+.status-rsvp-btn .rsvp-arrow-icon {
+  width: 11px;
+  height: 11px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.rsvp-cell-wrapper.is-open .status-rsvp-btn .rsvp-arrow-icon {
+  transform: rotate(180deg);
+}
+
+.rsvp-micro-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 155px;
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  padding: 4px;
+  z-index: 105;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownIn 0.12s ease-out;
+}
+
+.rsvp-menu-item {
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--slate-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.rsvp-menu-item:hover {
+  background: var(--slate-100);
+  color: var(--slate-900);
+}
+
+.rsvp-menu-item.active {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-weight: 700;
 }
 
 /* Guest Name & Mini Tags */
@@ -3095,6 +3258,44 @@ textarea#templateInput {
   border: 1px solid #BFDBFE;
 }
 
+/* Mobile RSVP badge in sub-row */
+.mobile-rsvp-badge {
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  line-height: 1.2;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mobile-rsvp-badge.rsvp-attending {
+  color: #166534;
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+}
+
+.mobile-rsvp-badge.rsvp-declined {
+  color: #991B1B;
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+}
+
+.mobile-rsvp-badge.rsvp-maybe {
+  color: #854D0E;
+  background: #FEF3C7;
+  border: 1px solid #FDE047;
+}
+
+.mobile-rsvp-badge.rsvp-pending {
+  color: #64748B;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+}
+
 .mobile-guest-header-actions {
   display: flex;
   align-items: center;
@@ -3169,6 +3370,86 @@ textarea#templateInput {
   color: var(--primary-blue);
   word-break: break-all;
   text-decoration: underline;
+}
+
+/* Mobile Drawer RSVP Segmented Control */
+.mobile-rsvp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mobile-rsvp-label {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--slate-700);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mobile-rsvp-segmented {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: var(--slate-100);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+}
+
+.mobile-rsvp-seg-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 3px;
+  border-radius: 6px;
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: var(--slate-600);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.mobile-rsvp-seg-btn:active {
+  transform: scale(0.96);
+}
+
+.mobile-rsvp-seg-btn.active.rsvp-attending {
+  background: #16A34A;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3);
+}
+
+.mobile-rsvp-seg-btn.active.rsvp-declined {
+  background: #DC2626;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
+}
+
+.mobile-rsvp-seg-btn.active.rsvp-maybe {
+  background: #D97706;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);
+}
+
+.mobile-rsvp-seg-btn.active.rsvp-pending {
+  background: #FFFFFF;
+  color: var(--slate-800);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--slate-300);
 }
 
 .mobile-drawer-actions {

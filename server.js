@@ -40,6 +40,7 @@ const apiRoutes = {
   '/api/verify-pin': require('./api/verify-pin'),
   '/api/guests': require('./api/guests'),
   '/api/sent-status': require('./api/sent-status'),
+  '/api/rsvp-status': require('./api/rsvp-status'),
   '/api/templates': require('./api/templates'),
   '/api/default-excel': require('./api/default-excel'),
   '/api/logs': require('./api/logs')

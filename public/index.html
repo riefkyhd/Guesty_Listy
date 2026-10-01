@@ -281,6 +281,14 @@
             <div class="progress-track">
               <div class="progress-fill" id="progressBarFill" style="width: 0%"></div>
             </div>
+            <!-- RSVP Attendance Summary Bar -->
+            <div class="rsvp-summary-bar" id="rsvpSummaryBar">
+              <span class="rsvp-summary-label"><i data-lucide="calendar-check" style="width:13px;height:13px;"></i> <span data-i18n="table.rsvpSummaryTitle">RSVP:</span></span>
+              <span class="rsvp-metric-pill rsvp-pill-attending" id="rsvpSummaryAttending">🟢 0 Hadir (0 Pax)</span>
+              <span class="rsvp-metric-pill rsvp-pill-declined" id="rsvpSummaryDeclined">🔴 0 Tidak</span>
+              <span class="rsvp-metric-pill rsvp-pill-maybe" id="rsvpSummaryMaybe">🟡 0 Ragu</span>
+              <span class="rsvp-metric-pill rsvp-pill-pending" id="rsvpSummaryPending">⚪ 0 Belum Respons</span>
+            </div>
           </div>
         </div>
 
@@ -338,6 +346,38 @@
             </div>
           </div>
 
+          <!-- RSVP Filter Dropdown -->
+          <div class="dropdown-filter-container" id="rsvpDropdownContainer">
+            <button type="button" class="filter-dropdown-btn" id="btnRsvpFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter RSVP Attendance" data-i18n-title="table.filterRsvpTitle">
+              <i data-lucide="calendar-check" class="filter-icon" style="width: 14px; height: 14px;"></i>
+              <span id="rsvpFilterSelectedText">RSVP: All</span>
+              <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
+            </button>
+            <div class="filter-dropdown-menu" id="rsvpFilterDropdownMenu" style="display: none;">
+              <button type="button" class="filter-dropdown-option active" data-rsvp="all">
+                <span class="option-label" data-i18n="table.rsvpAll">All RSVP</span>
+                <span class="option-count">(<span id="countRsvpAll">0</span>)</span>
+              </button>
+              <div class="dropdown-menu-divider"></div>
+              <button type="button" class="filter-dropdown-option" data-rsvp="attending">
+                <span class="option-label">🟢 <span data-i18n="rsvp.attending">Hadir</span></span>
+                <span class="option-count">(<span id="countRsvpAttending">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-rsvp="declined">
+                <span class="option-label">🔴 <span data-i18n="rsvp.declined">Tidak Hadir</span></span>
+                <span class="option-count">(<span id="countRsvpDeclined">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-rsvp="maybe">
+                <span class="option-label">🟡 <span data-i18n="rsvp.maybe">Ragu-ragu</span></span>
+                <span class="option-count">(<span id="countRsvpMaybe">0</span>)</span>
+              </button>
+              <button type="button" class="filter-dropdown-option" data-rsvp="pending">
+                <span class="option-label">⚪ <span data-i18n="rsvp.pending">Belum Respons</span></span>
+                <span class="option-count">(<span id="countRsvpPending">0</span>)</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Filter Pills -->
           <div class="filter-group" id="filterPills">
             <button class="filter-tab active" data-filter="all"><span data-i18n="table.tabAll">All</span> <span>(<span id="countFilterAll">0</span>)</span></button>
@@ -363,6 +403,7 @@
               <tr>
                 <th class="col-num" data-i18n="table.thNo">No</th>
                 <th class="col-status" data-i18n="table.thStatus">Delivery Status</th>
+                <th class="col-rsvp" data-i18n="table.thRsvp">RSVP Status</th>
                 <th class="col-name" data-i18n="table.thName">Guest Name &amp; Category</th>
                 <th class="col-phone" data-i18n="table.thPhone">WhatsApp Number</th>
                 <th class="col-link" data-i18n="table.thLink">Invitation Link</th>
