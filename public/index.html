@@ -281,13 +281,18 @@
             <div class="progress-track">
               <div class="progress-fill" id="progressBarFill" style="width: 0%"></div>
             </div>
-            <!-- RSVP Attendance Summary Bar -->
+            <!-- RSVP Attendance Summary Bar (Single Compact Strip) -->
             <div class="rsvp-summary-bar" id="rsvpSummaryBar">
               <span class="rsvp-summary-label"><i data-lucide="calendar-check" style="width:13px;height:13px;"></i> <span data-i18n="table.rsvpSummaryTitle">RSVP:</span></span>
-              <span class="rsvp-metric-pill rsvp-pill-attending" id="rsvpSummaryAttending">🟢 0 Hadir (0 Pax)</span>
-              <span class="rsvp-metric-pill rsvp-pill-declined" id="rsvpSummaryDeclined">🔴 0 Tidak</span>
-              <span class="rsvp-metric-pill rsvp-pill-maybe" id="rsvpSummaryMaybe">🟡 0 Ragu</span>
-              <span class="rsvp-metric-pill rsvp-pill-pending" id="rsvpSummaryPending">⚪ 0 Belum Respons</span>
+              <div class="rsvp-summary-strip" id="rsvpSummaryStrip">
+                <span class="rsvp-strip-item rsvp-pill-attending" id="rsvpSummaryAttending">🟢 0 (0 Pax)</span>
+                <span class="rsvp-strip-dot">•</span>
+                <span class="rsvp-strip-item rsvp-pill-declined" id="rsvpSummaryDeclined">🔴 0</span>
+                <span class="rsvp-strip-dot">•</span>
+                <span class="rsvp-strip-item rsvp-pill-maybe" id="rsvpSummaryMaybe">🟡 0</span>
+                <span class="rsvp-strip-dot">•</span>
+                <span class="rsvp-strip-item rsvp-pill-pending" id="rsvpSummaryPending">⚪ 0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -303,78 +308,81 @@
             </button>
           </div>
 
-          <!-- Notes / Pihak Filter Dropdown -->
-          <div class="dropdown-filter-container" id="sideDropdownContainer">
-            <button type="button" class="filter-dropdown-btn" id="btnSideFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter Notes / Side" data-i18n-title="table.filterSideTitle">
-              <i data-lucide="filter" class="filter-icon" style="width: 14px; height: 14px;"></i>
-              <span id="sideFilterSelectedText">Filter: All</span>
-              <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
-            </button>
-            <div class="filter-dropdown-menu" id="sideFilterDropdownMenu" style="display: none;">
-              <button type="button" class="filter-dropdown-option active" data-side="all">
-                <span class="option-label" data-i18n="table.sideAll">All</span>
-                <span class="option-count">(<span id="countSideAll">0</span>)</span>
+          <!-- Dropdowns Group (Side Filter + RSVP Filter) -->
+          <div class="filter-dropdowns-group">
+            <!-- Notes / Pihak Filter Dropdown -->
+            <div class="dropdown-filter-container" id="sideDropdownContainer">
+              <button type="button" class="filter-dropdown-btn" id="btnSideFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter Notes / Side" data-i18n-title="table.filterSideTitle">
+                <i data-lucide="filter" class="filter-icon" style="width: 14px; height: 14px;"></i>
+                <span id="sideFilterSelectedText">Filter: All</span>
+                <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
               </button>
-              <div class="dropdown-menu-divider"></div>
-              <div class="dropdown-section-title" data-i18n="table.sideGroomBride">Wedding Couple</div>
-              <button type="button" class="filter-dropdown-option" data-side="dhifa">
-                <span class="option-label">🌸 Dhifa</span>
-                <span class="option-count">(<span id="countSideDhifa">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-side="riefky">
-                <span class="option-label">💼 Riefky</span>
-                <span class="option-count">(<span id="countSideRiefky">0</span>)</span>
-              </button>
-              <div class="dropdown-menu-divider"></div>
-              <div class="dropdown-section-title" data-i18n="table.sideFamily">Family</div>
-              <button type="button" class="filter-dropdown-option" data-side="abi">
-                <span class="option-label">🧔 Abi</span>
-                <span class="option-count">(<span id="countSideAbi">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-side="umi">
-                <span class="option-label">🧕 Umi</span>
-                <span class="option-count">(<span id="countSideUmi">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-side="papa">
-                <span class="option-label">👨 Papa</span>
-                <span class="option-count">(<span id="countSidePapa">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-side="mama">
-                <span class="option-label">👩 Mama</span>
-                <span class="option-count">(<span id="countSideMama">0</span>)</span>
-              </button>
+              <div class="filter-dropdown-menu" id="sideFilterDropdownMenu" style="display: none;">
+                <button type="button" class="filter-dropdown-option active" data-side="all">
+                  <span class="option-label" data-i18n="table.sideAll">All</span>
+                  <span class="option-count">(<span id="countSideAll">0</span>)</span>
+                </button>
+                <div class="dropdown-menu-divider"></div>
+                <div class="dropdown-section-title" data-i18n="table.sideGroomBride">Wedding Couple</div>
+                <button type="button" class="filter-dropdown-option" data-side="dhifa">
+                  <span class="option-label">🌸 Dhifa</span>
+                  <span class="option-count">(<span id="countSideDhifa">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-side="riefky">
+                  <span class="option-label">💼 Riefky</span>
+                  <span class="option-count">(<span id="countSideRiefky">0</span>)</span>
+                </button>
+                <div class="dropdown-menu-divider"></div>
+                <div class="dropdown-section-title" data-i18n="table.sideFamily">Family</div>
+                <button type="button" class="filter-dropdown-option" data-side="abi">
+                  <span class="option-label">🧔 Abi</span>
+                  <span class="option-count">(<span id="countSideAbi">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-side="umi">
+                  <span class="option-label">🧕 Umi</span>
+                  <span class="option-count">(<span id="countSideUmi">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-side="papa">
+                  <span class="option-label">👨 Papa</span>
+                  <span class="option-count">(<span id="countSidePapa">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-side="mama">
+                  <span class="option-label">👩 Mama</span>
+                  <span class="option-count">(<span id="countSideMama">0</span>)</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-          <!-- RSVP Filter Dropdown -->
-          <div class="dropdown-filter-container" id="rsvpDropdownContainer">
-            <button type="button" class="filter-dropdown-btn" id="btnRsvpFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter RSVP Attendance" data-i18n-title="table.filterRsvpTitle">
-              <i data-lucide="calendar-check" class="filter-icon" style="width: 14px; height: 14px;"></i>
-              <span id="rsvpFilterSelectedText">RSVP: All</span>
-              <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
-            </button>
-            <div class="filter-dropdown-menu" id="rsvpFilterDropdownMenu" style="display: none;">
-              <button type="button" class="filter-dropdown-option active" data-rsvp="all">
-                <span class="option-label" data-i18n="table.rsvpAll">All RSVP</span>
-                <span class="option-count">(<span id="countRsvpAll">0</span>)</span>
+            <!-- RSVP Filter Dropdown -->
+            <div class="dropdown-filter-container" id="rsvpDropdownContainer">
+              <button type="button" class="filter-dropdown-btn" id="btnRsvpFilterDropdown" aria-haspopup="true" aria-expanded="false" title="Filter RSVP Attendance" data-i18n-title="table.filterRsvpTitle">
+                <i data-lucide="calendar-check" class="filter-icon" style="width: 14px; height: 14px;"></i>
+                <span id="rsvpFilterSelectedText">RSVP: All</span>
+                <i data-lucide="chevron-down" class="dropdown-arrow-icon" style="width: 13px; height: 13px;"></i>
               </button>
-              <div class="dropdown-menu-divider"></div>
-              <button type="button" class="filter-dropdown-option" data-rsvp="attending">
-                <span class="option-label">🟢 <span data-i18n="rsvp.attending">Hadir</span></span>
-                <span class="option-count">(<span id="countRsvpAttending">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-rsvp="declined">
-                <span class="option-label">🔴 <span data-i18n="rsvp.declined">Tidak Hadir</span></span>
-                <span class="option-count">(<span id="countRsvpDeclined">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-rsvp="maybe">
-                <span class="option-label">🟡 <span data-i18n="rsvp.maybe">Ragu-ragu</span></span>
-                <span class="option-count">(<span id="countRsvpMaybe">0</span>)</span>
-              </button>
-              <button type="button" class="filter-dropdown-option" data-rsvp="pending">
-                <span class="option-label">⚪ <span data-i18n="rsvp.pending">Belum Respons</span></span>
-                <span class="option-count">(<span id="countRsvpPending">0</span>)</span>
-              </button>
+              <div class="filter-dropdown-menu" id="rsvpFilterDropdownMenu" style="display: none;">
+                <button type="button" class="filter-dropdown-option active" data-rsvp="all">
+                  <span class="option-label" data-i18n="table.rsvpAll">All RSVP</span>
+                  <span class="option-count">(<span id="countRsvpAll">0</span>)</span>
+                </button>
+                <div class="dropdown-menu-divider"></div>
+                <button type="button" class="filter-dropdown-option" data-rsvp="attending">
+                  <span class="option-label">🟢 <span data-i18n="rsvp.attending">Hadir</span></span>
+                  <span class="option-count">(<span id="countRsvpAttending">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-rsvp="declined">
+                  <span class="option-label">🔴 <span data-i18n="rsvp.declined">Tidak Hadir</span></span>
+                  <span class="option-count">(<span id="countRsvpDeclined">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-rsvp="maybe">
+                  <span class="option-label">🟡 <span data-i18n="rsvp.maybe">Ragu-ragu</span></span>
+                  <span class="option-count">(<span id="countRsvpMaybe">0</span>)</span>
+                </button>
+                <button type="button" class="filter-dropdown-option" data-rsvp="pending">
+                  <span class="option-label">⚪ <span data-i18n="rsvp.pending">Belum Respons</span></span>
+                  <span class="option-count">(<span id="countRsvpPending">0</span>)</span>
+                </button>
+              </div>
             </div>
           </div>
 

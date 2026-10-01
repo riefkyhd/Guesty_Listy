@@ -2357,7 +2357,7 @@
       const tdLink = document.createElement('td');
       tdLink.className = 'col-link';
       tdLink.innerHTML = (link && link.startsWith('http'))
-        ? `<a href="${escapeHtml(link)}" target="_blank" class="link-url-text" title="${escapeHtml(link)}">${escapeHtml(link)}</a>`
+        ? `<a href="${escapeHtml(link)}" target="_blank" class="btn-link-pill" title="${escapeHtml(link)}"><i data-lucide="external-link"></i> Link</a>`
         : `<span style="color:var(--slate-400);">-</span>`;
 
       const tdActions = document.createElement('td');
@@ -2382,8 +2382,9 @@
 
       const btnCopyLink = document.createElement('button');
       btnCopyLink.type = 'button';
-      btnCopyLink.className = 'btn-copy-link';
-      btnCopyLink.innerHTML = `<i data-lucide="link" style="width:13px;height:13px;"></i> ${t('card.copyLink')}`;
+      btnCopyLink.className = 'btn-icon-action btn-copy-link';
+      btnCopyLink.innerHTML = `<i data-lucide="link" style="width:13px;height:13px;"></i>`;
+      btnCopyLink.title = t('card.copyLink');
       if (!phoneInfo.isValid) {
         btnCopyLink.classList.add('btn-action-disabled');
       } else {
@@ -2392,21 +2393,22 @@
 
       const btnCopyMsg = document.createElement('button');
       btnCopyMsg.type = 'button';
-      btnCopyMsg.className = 'btn-copy-msg';
-      btnCopyMsg.innerHTML = `<i data-lucide="copy" style="width:13px;height:13px;"></i> ${t('card.copyMsg')}`;
+      btnCopyMsg.className = 'btn-icon-action btn-copy-msg';
+      btnCopyMsg.innerHTML = `<i data-lucide="copy" style="width:13px;height:13px;"></i>`;
+      btnCopyMsg.title = t('card.copyMsg');
       btnCopyMsg.addEventListener('click', () => copyToClipboard(compiledMsg, t('toast.msgCopied', { name: guestName })));
 
       const btnView = document.createElement('button');
       btnView.type = 'button';
-      btnView.className = 'btn-view-preview';
-      btnView.innerHTML = `<i data-lucide="eye" style="width:14px;height:14px;"></i>`;
+      btnView.className = 'btn-icon-action btn-view-preview';
+      btnView.innerHTML = `<i data-lucide="eye" style="width:13px;height:13px;"></i>`;
       btnView.title = t('card.viewDetail');
       btnView.addEventListener('click', () => openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo));
 
       const btnDelete = document.createElement('button');
       btnDelete.type = 'button';
-      btnDelete.className = 'btn-delete-row';
-      btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:14px;height:14px;"></i>`;
+      btnDelete.className = 'btn-icon-action btn-action-delete btn-delete-row';
+      btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:13px;height:13px;"></i>`;
       btnDelete.title = t('card.deleteGuestTitle', { name: guestName });
       btnDelete.addEventListener('click', () => confirmDeleteGuest(originalIndex));
 
@@ -2719,10 +2721,6 @@
     let withPhone = 0, sentCount = 0;
     let totalPax = 0, sentPax = 0, withPhonePax = 0;
     let dhifaCount = 0, riefkyCount = 0, abiCount = 0, umiCount = 0, papaCount = 0, mamaCount = 0;
-    let rsvpAttending = 0, rsvpAttendingPax = 0;
-    let rsvpDeclined = 0;
-    let rsvpMaybe = 0;
-    let rsvpPending = 0;
 
     state.rawRows.forEach((row, idx) => {
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
@@ -2746,17 +2744,6 @@
       else if (side === 'papa') papaCount++;
       else if (side === 'mama') mamaCount++;
 
-      const rsvp = getRowRsvp(row, idx);
-      if (rsvp === 'attending') {
-        rsvpAttending++;
-        rsvpAttendingPax += pax;
-      } else if (rsvp === 'declined') {
-        rsvpDeclined++;
-      } else if (rsvp === 'maybe') {
-        rsvpMaybe++;
-      } else {
-        rsvpPending++;
-      }
     });
 
     const pendingCount = total - sentCount;
@@ -2787,20 +2774,6 @@
     dom.progressPercentage.textContent = `${percentage}% (${sentCount}/${total} · ${sentPax}/${totalPax} ${totalPax === 1 ? t('stat.guestSingular') : t('stat.progressGuests')})`;
     dom.progressBarFill.style.width = `${percentage}%`;
 
-    // RSVP Attendance Summary Bar
-    if (dom.rsvpSummaryAttending) {
-      dom.rsvpSummaryAttending.textContent = `🟢 ${rsvpAttending} ${t('rsvp.attending')} (${rsvpAttendingPax} Pax)`;
-    }
-    if (dom.rsvpSummaryDeclined) {
-      dom.rsvpSummaryDeclined.textContent = `🔴 ${rsvpDeclined} ${t('rsvp.declined')}`;
-    }
-    if (dom.rsvpSummaryMaybe) {
-      dom.rsvpSummaryMaybe.textContent = `🟡 ${rsvpMaybe} ${t('rsvp.maybe')}`;
-    }
-    if (dom.rsvpSummaryPending) {
-      dom.rsvpSummaryPending.textContent = `⚪ ${rsvpPending} ${t('rsvp.pending')}`;
-    }
-
     // Status filter counters — based on side+search only (NOT the active status pill)
     // so All=Sent+NotSent always holds and switching pills doesn't zero-out the other tab
     const countAllEl = document.getElementById('countFilterAll');
@@ -2826,7 +2799,42 @@
     if (countPendingEl) countPendingEl.textContent = tabPendingCount;
     if (countSentEl) countSentEl.textContent = tabSentCount;
 
-    // Pihak / Notes filter counters
+    // RSVP Attendance counters — dynamically scoped to active side filter + search query
+    let rsvpAttending = 0, rsvpAttendingPax = 0;
+    let rsvpDeclined = 0;
+    let rsvpMaybe = 0;
+    let rsvpPending = 0;
+
+    sideSearchFiltered.forEach(({ row, originalIndex }) => {
+      const rsvp = getRowRsvp(row, originalIndex);
+      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+      if (rsvp === 'attending') {
+        rsvpAttending++;
+        rsvpAttendingPax += pax;
+      } else if (rsvp === 'declined') {
+        rsvpDeclined++;
+      } else if (rsvp === 'maybe') {
+        rsvpMaybe++;
+      } else {
+        rsvpPending++;
+      }
+    });
+
+    // RSVP Attendance Summary Bar (Single Compact Strip)
+    if (dom.rsvpSummaryAttending) {
+      dom.rsvpSummaryAttending.textContent = `🟢 ${rsvpAttending} (${rsvpAttendingPax} Pax)`;
+    }
+    if (dom.rsvpSummaryDeclined) {
+      dom.rsvpSummaryDeclined.textContent = `🔴 ${rsvpDeclined}`;
+    }
+    if (dom.rsvpSummaryMaybe) {
+      dom.rsvpSummaryMaybe.textContent = `🟡 ${rsvpMaybe}`;
+    }
+    if (dom.rsvpSummaryPending) {
+      dom.rsvpSummaryPending.textContent = `⚪ ${rsvpPending}`;
+    }
+
+    // Pihak / Notes filter counters (global totals per side)
     const countSideAllEl = document.getElementById('countSideAll');
     const countSideDhifaEl = document.getElementById('countSideDhifa');
     const countSideRiefkyEl = document.getElementById('countSideRiefky');
@@ -2842,13 +2850,13 @@
     if (countSidePapaEl) countSidePapaEl.textContent = papaCount;
     if (countSideMamaEl) countSideMamaEl.textContent = mamaCount;
 
-    // RSVP Filter Dropdown counters
+    // RSVP Filter Dropdown counters (dynamically scoped to sideSearchFiltered)
     const countRsvpAllEl = document.getElementById('countRsvpAll');
     const countRsvpAttendingEl = document.getElementById('countRsvpAttending');
     const countRsvpDeclinedEl = document.getElementById('countRsvpDeclined');
     const countRsvpMaybeEl = document.getElementById('countRsvpMaybe');
     const countRsvpPendingEl = document.getElementById('countRsvpPending');
-    if (countRsvpAllEl) countRsvpAllEl.textContent = total;
+    if (countRsvpAllEl) countRsvpAllEl.textContent = sideSearchFiltered.length;
     if (countRsvpAttendingEl) countRsvpAttendingEl.textContent = rsvpAttending;
     if (countRsvpDeclinedEl) countRsvpDeclinedEl.textContent = rsvpDeclined;
     if (countRsvpMaybeEl) countRsvpMaybeEl.textContent = rsvpMaybe;
