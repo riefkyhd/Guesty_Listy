@@ -1036,7 +1036,7 @@ textarea#templateInput {
   font-size: 0.84rem;
 }
 
-/* Specific Column Widths (Optimized ~850px total to eliminate horizontal scroll) */
+/* Specific Column Widths (Balanced to eliminate awkward gaps while preventing horizontal scroll) */
 .col-num {
   width: 38px;
   text-align: center;
@@ -1045,24 +1045,24 @@ textarea#templateInput {
 }
 
 .col-status {
-  width: 115px;
-}
-
-.col-rsvp {
   width: 120px;
 }
 
+.col-rsvp {
+  width: 125px;
+}
+
 .col-name {
-  min-width: 190px;
+  min-width: 220px;
 }
 
 .col-phone {
-  width: 135px;
+  width: 145px;
 }
 
 .col-link {
-  width: 75px;
-  text-align: center;
+  min-width: 170px;
+  max-width: 240px;
 }
 
 .col-actions {

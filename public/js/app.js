@@ -2357,7 +2357,7 @@
       const tdLink = document.createElement('td');
       tdLink.className = 'col-link';
       tdLink.innerHTML = (link && link.startsWith('http'))
-        ? `<a href="${escapeHtml(link)}" target="_blank" class="btn-link-pill" title="${escapeHtml(link)}"><i data-lucide="external-link"></i> Link</a>`
+        ? `<a href="${escapeHtml(link)}" target="_blank" class="link-url-text" title="${escapeHtml(link)}">${escapeHtml(link)}</a>`
         : `<span style="color:var(--slate-400);">-</span>`;
 
       const tdActions = document.createElement('td');
