@@ -808,9 +808,12 @@
   }
 
   // ===========================================================================
-  // PIN Gate
+  // PIN Gate (Disabled by request - toggle PIN_PROTECTION_ENABLED to re-enable)
   // ===========================================================================
+  const PIN_PROTECTION_ENABLED = false;
+
   function isUnlocked() {
+    if (!PIN_PROTECTION_ENABLED) return true;
     return sessionStorage.getItem('viding_unlocked') === 'true';
   }
 
@@ -863,8 +866,8 @@
   }
 
   function setupPinGate() {
-    if (isUnlocked()) {
-      dom.pinOverlay.style.display = 'none';
+    if (!PIN_PROTECTION_ENABLED || isUnlocked()) {
+      if (dom.pinOverlay) dom.pinOverlay.style.display = 'none';
       initApp();
       return;
     }
