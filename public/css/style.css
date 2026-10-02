@@ -680,7 +680,8 @@ textarea#templateInput {
 .rsvp-summary-label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  margin-right: 4px;
   font-weight: 700;
   color: var(--slate-600);
   flex-shrink: 0;
@@ -695,20 +696,29 @@ textarea#templateInput {
 }
 
 .rsvp-strip-item {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.rsvp-emoji {
+  display: inline-block;
+  margin-right: 4px;
+  line-height: 1;
 }
 
 .rsvp-strip-dot {
   color: var(--slate-400);
   font-size: 0.65rem;
   user-select: none;
+  margin: 0 1px;
 }
 
 .rsvp-text-label {
   display: inline;
-  margin: 0 1px;
+  margin: 0 2px;
 }
 
 .rsvp-pill-attending {

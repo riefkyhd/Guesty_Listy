@@ -2822,16 +2822,16 @@
 
     // RSVP Attendance Summary Bar (Single Compact Strip, responsive text on desktop)
     if (dom.rsvpSummaryAttending) {
-      dom.rsvpSummaryAttending.innerHTML = `🟢 ${rsvpAttending} <span class="rsvp-text-label">${t('rsvp.attending')}</span> (${rsvpAttendingPax} Pax)`;
+      dom.rsvpSummaryAttending.innerHTML = `<span class="rsvp-emoji">🟢</span> ${rsvpAttending} <span class="rsvp-text-label">${t('rsvp.attending')}</span> (${rsvpAttendingPax} Pax)`;
     }
     if (dom.rsvpSummaryDeclined) {
-      dom.rsvpSummaryDeclined.innerHTML = `🔴 ${rsvpDeclined} <span class="rsvp-text-label">${t('rsvp.declined')}</span>`;
+      dom.rsvpSummaryDeclined.innerHTML = `<span class="rsvp-emoji">🔴</span> ${rsvpDeclined} <span class="rsvp-text-label">${t('rsvp.declined')}</span>`;
     }
     if (dom.rsvpSummaryMaybe) {
-      dom.rsvpSummaryMaybe.innerHTML = `🟡 ${rsvpMaybe} <span class="rsvp-text-label">${t('rsvp.maybe')}</span>`;
+      dom.rsvpSummaryMaybe.innerHTML = `<span class="rsvp-emoji">🟡</span> ${rsvpMaybe} <span class="rsvp-text-label">${t('rsvp.maybe')}</span>`;
     }
     if (dom.rsvpSummaryPending) {
-      dom.rsvpSummaryPending.innerHTML = `⚪ ${rsvpPending} <span class="rsvp-text-label">${t('rsvp.pending')}</span>`;
+      dom.rsvpSummaryPending.innerHTML = `<span class="rsvp-emoji">⚪</span> ${rsvpPending} <span class="rsvp-text-label">${t('rsvp.pending')}</span>`;
     }
 
     // Pihak / Notes filter counters (global totals per side)
