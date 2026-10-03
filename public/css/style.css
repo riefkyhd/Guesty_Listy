@@ -2938,6 +2938,33 @@ textarea#templateInput {
   color: var(--slate-600);
 }
 
+/* Import Table Section Headers */
+.import-section-header td {
+  padding: 8px 12px !important;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-top: 1px solid var(--slate-200);
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.import-section-new td {
+  background: #F0FDF4 !important;
+  color: #166534 !important;
+}
+
+.import-section-dup td {
+  background: #FEF3C7 !important;
+  color: #92400E !important;
+}
+
+.import-section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Badges inside import table */
 .badge-import-new {
   display: inline-flex;
@@ -4311,6 +4338,120 @@ textarea#templateInput {
   width: 10px;
   height: 10px;
   color: var(--slate-400);
+}
+
+/* Activity Log Guest Dropdown */
+.activity-log-item.has-dropdown {
+  cursor: pointer;
+  flex-direction: column;
+}
+
+.activity-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn-activity-guest-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: #F3E8FF;
+  border: 1px solid #E9D5FF;
+  color: #7E22CE;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 5px;
+}
+
+.btn-activity-guest-toggle:hover {
+  background: #E9D5FF;
+  color: #6B21A8;
+}
+
+.btn-activity-guest-toggle .activity-chevron-icon {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.2s ease;
+}
+
+.activity-log-item.is-expanded .btn-activity-guest-toggle .activity-chevron-icon {
+  transform: rotate(180deg);
+}
+
+.activity-guest-dropdown {
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--slate-200);
+  box-sizing: border-box;
+}
+
+.activity-guest-dropdown-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slate-500);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-guest-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.activity-guest-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #FFFFFF;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  box-sizing: border-box;
+}
+
+.activity-guest-index {
+  color: var(--slate-400);
+  font-weight: 600;
+  font-size: 0.7rem;
+  min-width: 22px;
+}
+
+.activity-guest-name {
+  font-weight: 600;
+  color: var(--slate-800);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-guest-pax {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1D4ED8;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 /* Gentle Realtime Pulse Animation for Cards and Table Rows */

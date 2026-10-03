@@ -1766,7 +1766,7 @@
     // Keep track of non-duplicate incoming guests accepted from this batch
     const incomingAcceptedIdentities = [];
 
-    pendingImportItems = incomingRows.map((row, idx) => {
+    const allParsedItems = incomingRows.map((row, idx) => {
       const candidate = extractGuestIdentity(row, phoneCol);
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
 
@@ -1804,6 +1804,11 @@
       };
     });
 
+    // Prioritize non-duplicate (new) guests first, maintaining relative order in each group
+    const newCandidates = allParsedItems.filter(i => !i.isDuplicate);
+    const dupCandidates = allParsedItems.filter(i => i.isDuplicate);
+    pendingImportItems = [...newCandidates, ...dupCandidates];
+
     renderImportPreviewModal();
   }
 
@@ -1834,9 +1839,10 @@
 
     updateConfirmImportButton();
 
-    // Render Rows in Import Table
+    // Render Rows in Import Table (Grouped with New Guests First)
     dom.importPreviewTableBody.innerHTML = '';
-    pendingImportItems.forEach((item, idx) => {
+
+    const renderItemRow = (item, displayIdx) => {
       const tr = document.createElement('tr');
       tr.className = item.isDuplicate ? 'import-row-dup' : 'import-row-new';
 
@@ -1866,7 +1872,7 @@
       // No
       const tdNo = document.createElement('td');
       tdNo.className = 'import-col-num';
-      tdNo.textContent = idx + 1;
+      tdNo.textContent = displayIdx;
 
       // Status Impor
       const tdStatus = document.createElement('td');
@@ -1918,7 +1924,39 @@
       tr.appendChild(tdPhone);
       tr.appendChild(tdNote);
       dom.importPreviewTableBody.appendChild(tr);
-    });
+    };
+
+    // 1. Prioritize and render New Guests Section
+    if (newItems.length > 0) {
+      const trHeaderNew = document.createElement('tr');
+      trHeaderNew.className = 'import-section-header import-section-new';
+      trHeaderNew.innerHTML = `
+        <td colspan="8">
+          <div class="import-section-badge">
+            <i data-lucide="user-check" style="width:14px;height:14px;"></i>
+            <span>Tamu Baru (${newItems.length}) — Siap Diimpor</span>
+          </div>
+        </td>
+      `;
+      dom.importPreviewTableBody.appendChild(trHeaderNew);
+      newItems.forEach((item, idx) => renderItemRow(item, idx + 1));
+    }
+
+    // 2. Render Duplicate Guests Section (Grouped below, skipped)
+    if (dupItems.length > 0) {
+      const trHeaderDup = document.createElement('tr');
+      trHeaderDup.className = 'import-section-header import-section-dup';
+      trHeaderDup.innerHTML = `
+        <td colspan="8">
+          <div class="import-section-badge">
+            <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i>
+            <span>Duplikat Terdeteksi (${dupItems.length}) — Dilewati Otomatis</span>
+          </div>
+        </td>
+      `;
+      dom.importPreviewTableBody.appendChild(trHeaderDup);
+      dupItems.forEach((item, idx) => renderItemRow(item, idx + 1));
+    }
 
     dom.importPreviewModal.style.display = 'flex';
     setupLucideIcons();
@@ -2003,10 +2041,20 @@
         added: newRows.length
       });
 
+      const importedGuestList = itemsToAdd.map(i => ({
+        name: i.name,
+        pax: i.pax,
+        side: i.side
+      }));
+
       logActivity({
         action: 'GUESTS_IMPORTED',
         summary: `Menambahkan ${newRows.length} tamu baru dari file Excel`,
-        details: { count: newRows.length, fileName: pendingImportFilename }
+        details: {
+          count: newRows.length,
+          fileName: pendingImportFilename,
+          guestList: importedGuestList
+        }
       });
 
       closeImportPreviewModal();
@@ -3084,34 +3132,99 @@
       const location = log.location || '';
       const ip = log.ip_address || '';
 
+      const guestList = (log.details && Array.isArray(log.details.guestList)) ? log.details.guestList : [];
+      const hasGuestList = guestList.length > 0;
+
       const item = document.createElement('div');
-      item.className = 'activity-log-item';
+      item.className = `activity-log-item ${hasGuestList ? 'has-dropdown' : ''}`;
+
+      let guestDropdownHtml = '';
+      let toggleBtnHtml = '';
+
+      if (hasGuestList) {
+        toggleBtnHtml = `
+          <button type="button" class="btn-activity-guest-toggle" title="Klik untuk melihat daftar nama tamu yang diimpor">
+            <i data-lucide="users" style="width:12px;height:12px;"></i>
+            <span class="toggle-text">Lihat ${guestList.length} Tamu</span>
+            <i data-lucide="chevron-down" class="activity-chevron-icon"></i>
+          </button>
+        `;
+
+        guestDropdownHtml = `
+          <div class="activity-guest-dropdown" style="display: none;">
+            <div class="activity-guest-dropdown-header">
+              <span>Daftar ${guestList.length} Tamu yang Diimpor:</span>
+            </div>
+            <div class="activity-guest-dropdown-list">
+              ${guestList.map((g, gIdx) => `
+                <div class="activity-guest-row">
+                  <span class="activity-guest-index">#${gIdx + 1}</span>
+                  <span class="activity-guest-name" title="${escapeHtml(g.name || 'Tamu')}">${escapeHtml(g.name || 'Tamu')}</span>
+                  <span class="activity-guest-pax">👥 ${g.pax || 1} Pax</span>
+                  ${getSideBadgeHtml(g.side) || ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
       item.innerHTML = `
-        <div class="activity-icon-badge ${badgeClass}">
-          <i data-lucide="${icon}" style="width:16px;height:16px;"></i>
-        </div>
-        <div class="activity-body">
-          <div class="activity-header-line">
-            <span class="activity-summary">${escapeHtml(log.summary)}</span>
-            <span class="activity-time">${escapeHtml(timeStr)}</span>
+        <div class="activity-item-main">
+          <div class="activity-icon-badge ${badgeClass}">
+            <i data-lucide="${icon}" style="width:16px;height:16px;"></i>
           </div>
-          <div class="activity-meta-line">
-            <span class="activity-meta-pill" title="Perangkat & Browser">
-              <i data-lucide="smartphone"></i> ${escapeHtml(device)}
-            </span>
-            ${location && location !== 'Lokal / Tidak Terdeteksi' ? `
-              <span class="activity-meta-pill" title="Lokasi">
-                <i data-lucide="map-pin"></i> ${escapeHtml(location)}
+          <div class="activity-body">
+            <div class="activity-header-line">
+              <span class="activity-summary">${escapeHtml(log.summary)}</span>
+              <span class="activity-time">${escapeHtml(timeStr)}</span>
+            </div>
+            <div class="activity-meta-line">
+              <span class="activity-meta-pill" title="Perangkat & Browser">
+                <i data-lucide="smartphone"></i> ${escapeHtml(device)}
               </span>
-            ` : ''}
-            ${ip && ip !== '127.0.0.1' && ip !== '::1' ? `
-              <span class="activity-meta-pill" title="Alamat IP">
-                <i data-lucide="globe"></i> ${escapeHtml(ip)}
-              </span>
-            ` : ''}
+              ${location && location !== 'Lokal / Tidak Terdeteksi' ? `
+                <span class="activity-meta-pill" title="Lokasi">
+                  <i data-lucide="map-pin"></i> ${escapeHtml(location)}
+                </span>
+              ` : ''}
+              ${ip && ip !== '127.0.0.1' && ip !== '::1' ? `
+                <span class="activity-meta-pill" title="Alamat IP">
+                  <i data-lucide="globe"></i> ${escapeHtml(ip)}
+                </span>
+              ` : ''}
+            </div>
+            ${toggleBtnHtml}
           </div>
         </div>
+        ${guestDropdownHtml}
       `;
+
+      if (hasGuestList) {
+        const toggleBtn = item.querySelector('.btn-activity-guest-toggle');
+        const dropdown = item.querySelector('.activity-guest-dropdown');
+        const toggleText = item.querySelector('.toggle-text');
+
+        const toggleDropdown = (e) => {
+          if (e) e.stopPropagation();
+          const isCurrentlyOpen = dropdown.style.display !== 'none';
+          dropdown.style.display = isCurrentlyOpen ? 'none' : 'block';
+          item.classList.toggle('is-expanded', !isCurrentlyOpen);
+          if (toggleText) {
+            toggleText.textContent = isCurrentlyOpen ? `Lihat ${guestList.length} Tamu` : `Tutup (${guestList.length} Tamu)`;
+          }
+        };
+
+        if (toggleBtn) {
+          toggleBtn.addEventListener('click', toggleDropdown);
+        }
+        item.addEventListener('click', (e) => {
+          if (!e.target.closest('.activity-guest-dropdown')) {
+            toggleDropdown(e);
+          }
+        });
+      }
+
       dom.activityLogList.appendChild(item);
     });
     setupLucideIcons();
