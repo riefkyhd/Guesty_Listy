@@ -41,11 +41,18 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'rows array required' });
     }
 
+    // Filter out any blank/empty rows before inserting
+    const cleanRows = rows.filter(r => {
+      if (!r || typeof r !== 'object') return false;
+      const name = (r.Nama || r.Name || r.name || '').toString().trim();
+      return name.length > 0 && name.toLowerCase() !== 'undefined';
+    });
+
     // Delete existing guests and replace
     await supabase.from('guests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-    if (rows.length > 0) {
-      const insertData = rows.map((raw_data, row_index) => ({ row_index, raw_data }));
+    if (cleanRows.length > 0) {
+      const insertData = cleanRows.map((raw_data, row_index) => ({ row_index, raw_data }));
       const { error } = await supabase.from('guests').insert(insertData);
       if (error) return res.status(500).json({ error: error.message });
     }

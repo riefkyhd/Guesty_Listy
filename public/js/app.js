@@ -35,7 +35,7 @@
       'app.history': 'Activity',
       'app.historyTitle': 'View Activity History & Device Info',
 
-      'stat.totalGuests': 'Total Guests',
+      'stat.totalGuests': 'Total Invitations',
       'stat.sent': 'Sent',
       'stat.pending': 'Not Sent',
       'stat.syncConnecting': 'Connecting...',
@@ -476,6 +476,16 @@
     return `${prefix}${t('table.sideAll')}`;
   }
 
+  function getSideDisplayName(side) {
+    if (side === 'dhifa') return '🌸 Dhifa';
+    if (side === 'riefky') return '💼 Riefky';
+    if (side === 'abi') return '🧔 Abi';
+    if (side === 'umi') return '🧕 Umi';
+    if (side === 'papa') return '👨 Papa';
+    if (side === 'mama') return '👩 Mama';
+    return t('table.sideAll');
+  }
+
   function updateSideFilterLabels() {
     if (dom.sideFilterSelectedText) {
       dom.sideFilterSelectedText.textContent = getSideFilterLabel(state.currentSideFilter || 'all');
@@ -644,6 +654,7 @@
     showingCountText: document.getElementById('showingCountText'),
     progressPercentage: document.getElementById('progressPercentage'),
     progressBarFill: document.getElementById('progressBarFill'),
+    statTotalGuestsTitle: document.getElementById('statTotalGuestsTitle'),
     statTotalGuests: document.getElementById('statTotalGuests'),
     statTotalPax: document.getElementById('statTotalPax'),
     statSentCount: document.getElementById('statSentCount'),
@@ -1234,7 +1245,10 @@
       // 1. Process guests
       const guests = guestsRes ? guestsRes.guests : null;
       if (Array.isArray(guests)) {
-        const newRows = guests.map(g => g.raw_data);
+        const newRows = guests.map(g => g.raw_data).filter(r => {
+          const name = (r && (r['Nama'] || r['Name'] || r['name'] || '')).toString().trim();
+          return name.length > 0 && name.toLowerCase() !== 'undefined';
+        });
         const currentJson = JSON.stringify(state.rawRows);
         const newJson = JSON.stringify(newRows);
         if (currentJson !== newJson) {
@@ -1498,7 +1512,10 @@
       const data = await apiGet('/api/guests');
       const guests = data.guests || [];
       if (guests.length > 0) {
-        const rows = guests.map(g => g.raw_data);
+        const rows = guests.map(g => g.raw_data).filter(r => {
+          const name = (r && (r['Nama'] || r['Name'] || r['name'] || '')).toString().trim();
+          return name.length > 0 && name.toLowerCase() !== 'undefined';
+        });
         processRows(rows, t('fileStatus.saved'));
         return true;
       }
@@ -1754,9 +1771,20 @@
       return;
     }
 
+    // Filter out blank rows / template instruction rows with no name
+    const validIncomingRows = incomingRows.filter(row => {
+      const name = (row['Nama'] || row['Name'] || row['name'] || '').toString().trim();
+      return name.length > 0 && name.toLowerCase() !== 'undefined';
+    });
+
+    if (validIncomingRows.length === 0) {
+      showToast('File Excel tidak memiliki baris data tamu yang valid.', 'danger');
+      return;
+    }
+
     pendingImportFilename = filename || 'Data Excel';
 
-    const phoneCol = detectPhoneColumn(Object.keys(incomingRows[0] || {}));
+    const phoneCol = detectPhoneColumn(Object.keys(validIncomingRows[0] || {}));
 
     // Extract identities of all existing guests in state.rawRows
     const existingGuestIdentities = (state.rawRows || []).map(r => 
@@ -1766,7 +1794,7 @@
     // Keep track of non-duplicate incoming guests accepted from this batch
     const incomingAcceptedIdentities = [];
 
-    const allParsedItems = incomingRows.map((row, idx) => {
+    const allParsedItems = validIncomingRows.map((row, idx) => {
       const candidate = extractGuestIdentity(row, phoneCol);
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
 
@@ -2768,26 +2796,20 @@
   }
 
   function updateStatsAndProgress() {
-    const total = state.rawRows.length;
-    let withPhone = 0, sentCount = 0;
-    let totalPax = 0, sentPax = 0, withPhonePax = 0;
+    const sideFilter = state.currentSideFilter || 'all';
+
+    let total = 0, totalPax = 0, sentCount = 0, sentPax = 0, withPhone = 0, withPhonePax = 0;
     let dhifaCount = 0, riefkyCount = 0, abiCount = 0, umiCount = 0, papaCount = 0, mamaCount = 0;
 
     state.rawRows.forEach((row, idx) => {
+      const name = (row['Nama'] || row['Name'] || row['name'] || '').toString().trim();
+      if (!name || name.toLowerCase() === 'undefined') return;
+
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
-      totalPax += pax;
-
       const hasPhone = normalizePhone(row[state.phoneColumn]).isValid;
-      if (hasPhone) {
-        withPhone++;
-        withPhonePax += pax;
-      }
-      if (isRowSent(row, idx)) {
-        sentCount++;
-        sentPax += pax;
-      }
-
+      const isSent = isRowSent(row, idx);
       const side = getGuestSide(row);
+
       if (side === 'dhifa') dhifaCount++;
       else if (side === 'riefky') riefkyCount++;
       else if (side === 'abi') abiCount++;
@@ -2795,11 +2817,34 @@
       else if (side === 'papa') papaCount++;
       else if (side === 'mama') mamaCount++;
 
+      // When sideFilter is set, calculate the stats for that specific side;
+      // When sideFilter is 'all', calculate global total across all guests
+      if (sideFilter === 'all' || side === sideFilter) {
+        total++;
+        totalPax += pax;
+        if (hasPhone) {
+          withPhone++;
+          withPhonePax += pax;
+        }
+        if (isSent) {
+          sentCount++;
+          sentPax += pax;
+        }
+      }
     });
 
     const pendingCount = total - sentCount;
     const pendingPax = totalPax - sentPax;
     const percentage = total > 0 ? Math.round((sentCount / total) * 100) : 0;
+
+    if (dom.statTotalGuestsTitle) {
+      if (sideFilter === 'all') {
+        dom.statTotalGuestsTitle.textContent = t('stat.totalGuests');
+      } else {
+        const sideName = getSideDisplayName(sideFilter);
+        dom.statTotalGuestsTitle.textContent = `${t('stat.totalGuests')} (${sideName})`;
+      }
+    }
 
     dom.statTotalGuests.textContent = total;
     if (dom.statTotalPax) {
@@ -2831,7 +2876,6 @@
     const countPendingEl = document.getElementById('countFilterPending');
     const countSentEl = document.getElementById('countFilterSent');
     const q = state.searchQuery.toLowerCase().trim();
-    const sideFilter = state.currentSideFilter || 'all';
     const sideSearchFiltered = state.rawRows.map((row, originalIndex) => ({ row, originalIndex })).filter(({ row, originalIndex }) => {
       const guestSide = getGuestSide(row);
       if (sideFilter !== 'all' && guestSide !== sideFilter) return false;
