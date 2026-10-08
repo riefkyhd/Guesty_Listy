@@ -69,14 +69,6 @@ module.exports = async function handler(req, res) {
         }));
         await supabase.from('sent_statuses').upsert(upsertData, { onConflict: 'guest_key' });
       }
-
-      // Remove obsolete keys only (avoid full wipe)
-      const { data: existingData } = await supabase.from('sent_statuses').select('guest_key');
-      const activeSet = new Set(activeKeys);
-      const toDelete = (existingData || []).map(r => r.guest_key).filter(k => !activeSet.has(k));
-      if (toDelete.length > 0) {
-        await supabase.from('sent_statuses').delete().in('guest_key', toDelete);
-      }
     }
 
     // If rsvpStatuses provided, sync rsvp_statuses atomically in the same operation
@@ -93,14 +85,12 @@ module.exports = async function handler(req, res) {
         }));
         await supabase.from('rsvp_statuses').upsert(upsertData, { onConflict: 'guest_key' });
       }
+    }
 
-      // Remove obsolete keys
-      const { data: existingData } = await supabase.from('rsvp_statuses').select('guest_key');
-      const activeSet = new Set(nonPendingKeys);
-      const toDelete = (existingData || []).map(r => r.guest_key).filter(k => !activeSet.has(k));
-      if (toDelete.length > 0) {
-        await supabase.from('rsvp_statuses').delete().in('guest_key', toDelete);
-      }
+    // Explicitly delete only specified keys (e.g. when a guest row is intentionally deleted)
+    if (Array.isArray(req.body.deletedGuestKeys) && req.body.deletedGuestKeys.length > 0) {
+      await supabase.from('sent_statuses').delete().in('guest_key', req.body.deletedGuestKeys);
+      await supabase.from('rsvp_statuses').delete().in('guest_key', req.body.deletedGuestKeys);
     }
 
     return res.status(200).json({ ok: true, count: rows.length });

@@ -1070,19 +1070,31 @@
   }
 
   function getRowKey(row, index) {
-    const name = (row['Nama'] || row['Name'] || '').trim();
+    const name = (row['Nama'] || row['Name'] || '').toString().trim();
+    const phone = (row[state.phoneColumn] || '').toString().trim();
+    return `${name}_${phone}`;
+  }
+
+  function getLegacyRowKey(row, index) {
+    const name = (row['Nama'] || row['Name'] || '').toString().trim();
     const phone = (row[state.phoneColumn] || '').toString().trim();
     return `${name}_${phone}_${index}`;
   }
 
   function isRowSent(row, index) {
-    return !!state.sentStatuses[getRowKey(row, index)];
+    const key = getRowKey(row, index);
+    if (state.sentStatuses[key]) return true;
+    if (index !== undefined && index !== null) {
+      const legKey = getLegacyRowKey(row, index);
+      if (state.sentStatuses[legKey]) return true;
+    }
+    return false;
   }
 
   function getGuestNameByKey(guestKey) {
     if (!guestKey || !state.rawRows) return '';
     for (let i = 0; i < state.rawRows.length; i++) {
-      if (getRowKey(state.rawRows[i], i) === guestKey) {
+      if (getRowKey(state.rawRows[i], i) === guestKey || getLegacyRowKey(state.rawRows[i], i) === guestKey) {
         return (state.rawRows[i]['Nama'] || state.rawRows[i]['Name'] || '').trim();
       }
     }
@@ -1119,11 +1131,20 @@
 
   async function setRowSent(row, index, isSent) {
     const key = getRowKey(row, index);
+    const legKey = getLegacyRowKey(row, index);
     const guestName = (row['Nama'] || row['Name'] || 'Tamu').trim();
-    if (isSent) { state.sentStatuses[key] = true; } else { delete state.sentStatuses[key]; }
+    if (isSent) {
+      state.sentStatuses[key] = true;
+    } else {
+      delete state.sentStatuses[key];
+      delete state.sentStatuses[legKey];
+    }
     updateStatsAndProgress();
     broadcastRealtimeEvent('status_updated', { guestKey: key, isSent, guestName });
     await persistSentStatus(key, isSent);
+    if (!isSent) {
+      await persistSentStatus(legKey, false);
+    }
     logActivity({
       action: isSent ? 'STATUS_SENT' : 'STATUS_PENDING',
       summary: `"${guestName}" ditandai ${isSent ? 'Sudah Kirim' : 'Belum Kirim'}`,
@@ -1153,7 +1174,12 @@
 
   function getRowRsvp(row, index) {
     const key = getRowKey(row, index);
-    return state.rsvpStatuses[key] || 'pending';
+    if (state.rsvpStatuses[key]) return state.rsvpStatuses[key];
+    if (index !== undefined && index !== null) {
+      const legKey = getLegacyRowKey(row, index);
+      if (state.rsvpStatuses[legKey]) return state.rsvpStatuses[legKey];
+    }
+    return 'pending';
   }
 
   function getRsvpConfig(status) {
@@ -1180,16 +1206,21 @@
 
   async function setRowRsvp(row, index, newStatus) {
     const key = getRowKey(row, index);
+    const legKey = getLegacyRowKey(row, index);
     const guestName = (row['Nama'] || row['Name'] || 'Tamu').trim();
     if (newStatus && newStatus !== 'pending') {
       state.rsvpStatuses[key] = newStatus;
     } else {
       delete state.rsvpStatuses[key];
+      delete state.rsvpStatuses[legKey];
     }
     updateStatsAndProgress();
     renderTable();
     broadcastRealtimeEvent('rsvp_status_updated', { guestKey: key, status: newStatus, guestName });
     await persistRsvpStatus(key, newStatus);
+    if (!newStatus || newStatus === 'pending') {
+      await persistRsvpStatus(legKey, 'pending');
+    }
     logActivity({
       action: 'RSVP_STATUS_UPDATED',
       summary: `RSVP "${guestName}" diubah ke ${getRsvpLabel(newStatus)}`,
@@ -1525,7 +1556,7 @@
     return false;
   }
 
-  async function saveGuestsToSupabase(rows, sentStatuses = null, shouldBroadcast = true, rsvpStatuses = null) {
+  async function saveGuestsToSupabase(rows, sentStatuses = null, shouldBroadcast = true, rsvpStatuses = null, deletedKeys = null) {
     try {
       const payload = { rows };
       if (sentStatuses && typeof sentStatuses === 'object') {
@@ -1533,6 +1564,9 @@
       }
       if (rsvpStatuses && typeof rsvpStatuses === 'object') {
         payload.rsvpStatuses = rsvpStatuses;
+      }
+      if (Array.isArray(deletedKeys) && deletedKeys.length > 0) {
+        payload.deletedGuestKeys = deletedKeys;
       }
       await apiPost('/api/guests', payload);
       if (shouldBroadcast) {
@@ -1570,28 +1604,19 @@
     // 1. Lock mutations to ignore any incoming CDC echo events or background polling
     isLocalMutationInProgress = true;
 
-    // 2. Preserve isSent and RSVP status for each row
-    const isSentArray = state.rawRows.map((r, i) => isRowSent(r, i));
-    const rsvpArray = state.rawRows.map((r, i) => getRowRsvp(r, i));
+    // 2. Identify keys of the guest being deleted
+    const rowToDelete = state.rawRows[index];
+    const stableKey = getRowKey(rowToDelete, index);
+    const legKey = getLegacyRowKey(rowToDelete, index);
 
     // 3. Remove row from local state
     state.rawRows.splice(index, 1);
-    isSentArray.splice(index, 1);
-    rsvpArray.splice(index, 1);
 
-    // 4. Rebuild sentStatuses and rsvpStatuses mapped to new shifted row keys
-    const newSentStatuses = {};
-    const newRsvpStatuses = {};
-    state.rawRows.forEach((r, i) => {
-      if (isSentArray[i]) {
-        newSentStatuses[getRowKey(r, i)] = true;
-      }
-      if (rsvpArray[i] && rsvpArray[i] !== 'pending') {
-        newRsvpStatuses[getRowKey(r, i)] = rsvpArray[i];
-      }
-    });
-    state.sentStatuses = newSentStatuses;
-    state.rsvpStatuses = newRsvpStatuses;
+    // 4. Remove only the deleted guest's keys locally (no index shifting for other guests!)
+    delete state.sentStatuses[stableKey];
+    delete state.sentStatuses[legKey];
+    delete state.rsvpStatuses[stableKey];
+    delete state.rsvpStatuses[legKey];
 
     // 5. Adjust expanded index if mobile card was expanded
     if (state.expandedGuestIndex === index) {
@@ -1613,9 +1638,9 @@
     updateLivePreview();
     showToast(t('toast.guestDeleted', { name: guestName }), 'success');
 
-    // 8. Persist atomically to Supabase (guests + sentStatuses + rsvpStatuses in a single request)
+    // 8. Persist atomically to Supabase (guests + sentStatuses + rsvpStatuses + deletedGuestKeys in a single request)
     try {
-      await saveGuestsToSupabase(state.rawRows, state.sentStatuses, false, state.rsvpStatuses);
+      await saveGuestsToSupabase(state.rawRows, state.sentStatuses, false, state.rsvpStatuses, [stableKey, legKey]);
     } catch (e) {
       console.warn('Failed to sync guest deletion to cloud', e);
     }
