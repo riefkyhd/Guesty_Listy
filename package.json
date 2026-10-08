@@ -4,7 +4,8 @@
   "description": "WhatsApp wa.me message & link generator from Excel template for wedding invitations",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node tests/performance_and_regression.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1"

@@ -1503,8 +1503,8 @@
     realtimeChannel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         setSyncStatus('live');
-        // Live websocket active: maintain 20s background safety poll
-        startFallbackPolling(20000);
+        // Live WebSocket active: stop redundant fallback polling to save requests & battery
+        stopFallbackPolling();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         setSyncStatus('disconnected');
         // WebSockets down: switch to 5s active polling
@@ -1661,63 +1661,102 @@
     }, 2000);
   }
 
-  function loadDefaultExcelDirectly() {
-    return fetch('/api/default-excel')
-      .then(res => {
-        if (!res.ok) throw new Error('Default Excel not found');
-        return res.arrayBuffer();
-      })
-      .then(buffer => {
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        if (rows.length > 0) {
-          processRows(rows, 'invitation_list_36032.xlsx (Bawaan)');
-          saveGuestsToSupabase(rows);
+  let xlsxLoadingPromise = null;
+  function ensureXLSXLoaded() {
+    if (typeof window.XLSX !== 'undefined') {
+      return Promise.resolve(window.XLSX);
+    }
+    if (xlsxLoadingPromise) return xlsxLoadingPromise;
+
+    xlsxLoadingPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/vendor/xlsx.full.min.js';
+      script.onload = () => {
+        if (typeof window.XLSX !== 'undefined') {
+          resolve(window.XLSX);
+        } else {
+          const fallback = document.createElement('script');
+          fallback.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          fallback.onload = () => resolve(window.XLSX);
+          fallback.onerror = () => reject(new Error('Failed to load SheetJS XLSX parser'));
+          document.head.appendChild(fallback);
         }
-      })
-      .catch(err => console.warn('Could not auto-load default Excel directly:', err));
+      };
+      script.onerror = () => {
+        const fallback = document.createElement('script');
+        fallback.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+        fallback.onload = () => resolve(window.XLSX);
+        fallback.onerror = () => reject(new Error('Failed to load SheetJS XLSX parser'));
+        document.head.appendChild(fallback);
+      };
+      document.head.appendChild(script);
+    });
+    return xlsxLoadingPromise;
   }
 
-  function loadDefaultExcel() {
-    return fetch('/api/default-excel')
-      .then(res => {
-        if (!res.ok) throw new Error('Default Excel not found');
-        return res.arrayBuffer();
-      })
-      .then(buffer => {
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        if (rows && rows.length > 0) {
-          openImportPreviewModal(rows, 'invitation_list_36032.xlsx (Bawaan)');
-        }
-      })
-      .catch(err => {
-        console.warn('Could not load default Excel:', err);
-        showToast('Gagal memuat template Excel bawaan.', 'danger');
-      });
-  }
-
-  function processExcelFile(file) {
-    const reader = new FileReader();
-    reader.onload = async function (e) {
-      const data = new Uint8Array(e.target.result);
-      try {
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        if (!rows || rows.length === 0) {
-          showToast('File Excel kosong atau tidak memiliki data baris.', 'danger');
-          return;
-        }
-        openImportPreviewModal(rows, file.name);
-      } catch (err) {
-        console.error('Error parsing Excel:', err);
-        showToast('Gagal membaca file Excel. Pastikan format valid.', 'danger');
+  async function loadDefaultExcelDirectly() {
+    try {
+      await ensureXLSXLoaded();
+      const res = await fetch('/api/default-excel');
+      if (!res.ok) throw new Error('Default Excel not found');
+      const buffer = await res.arrayBuffer();
+      const workbook = window.XLSX.read(buffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      if (rows.length > 0) {
+        processRows(rows, 'invitation_list_36032.xlsx (Bawaan)');
+        saveGuestsToSupabase(rows);
       }
-    };
-    reader.readAsArrayBuffer(file);
+    } catch (err) {
+      console.warn('Could not auto-load default Excel directly:', err);
+    }
+  }
+
+  async function loadDefaultExcel() {
+    try {
+      showToast('Memuat modul pembaca Excel...', 'info');
+      await ensureXLSXLoaded();
+      const res = await fetch('/api/default-excel');
+      if (!res.ok) throw new Error('Default Excel not found');
+      const buffer = await res.arrayBuffer();
+      const workbook = window.XLSX.read(buffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      if (rows && rows.length > 0) {
+        openImportPreviewModal(rows, 'invitation_list_36032.xlsx (Bawaan)');
+      }
+    } catch (err) {
+      console.warn('Could not load default Excel:', err);
+      showToast('Gagal memuat template Excel bawaan.', 'danger');
+    }
+  }
+
+  async function processExcelFile(file) {
+    try {
+      showToast('Memuat modul pembaca Excel...', 'info');
+      await ensureXLSXLoaded();
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        const data = new Uint8Array(e.target.result);
+        try {
+          const workbook = window.XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          if (!rows || rows.length === 0) {
+            showToast('File Excel kosong atau tidak memiliki data baris.', 'danger');
+            return;
+          }
+          openImportPreviewModal(rows, file.name);
+        } catch (err) {
+          console.error('Error parsing Excel:', err);
+          showToast('Gagal membaca file Excel. Pastikan format valid.', 'danger');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (err) {
+      console.error('Error loading XLSX engine:', err);
+      showToast('Gagal memuat pustaka parser Excel.', 'danger');
+    }
   }
 
   // ===========================================================================
@@ -2332,18 +2371,44 @@
   // ===========================================================================
   // Table Rendering
   // ===========================================================================
+  // Pre-compiled Lucide SVGs for zero-cost DOM rendering (avoids lucide.createIcons freeze)
+  const LUCIDE_ICONS_SVG = {
+    'check-circle-2': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+    'check': '<path d="M20 6 9 17l-5-5"/>',
+    'phone-off': '<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="22" x2="2" y1="2" y2="22"/>',
+    'send': '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+    'link': '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    'copy': '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    'eye': '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'calendar-check': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+    'rotate-ccw': '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'
+  };
+
+  function getIconSvg(name, { className = '', style = '', size = 24 } = {}) {
+    const inner = LUCIDE_ICONS_SVG[name] || '';
+    const styleAttr = style ? ` style="${style}"` : '';
+    const classAttr = `lucide lucide-${name}${className ? ' ' + className : ''}`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${classAttr}"${styleAttr}>${inner}</svg>`;
+  }
+
   function renderTable() {
     const tbody = dom.recipientsTableBody;
-    tbody.innerHTML = '';
-    if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
 
     if (state.rawRows.length === 0) {
+      tbody.innerHTML = '';
+      if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
       if (dom.emptyState) dom.emptyState.style.display = 'block';
       if (dom.showingCountText) dom.showingCountText.textContent = t('table.showingCount', { count: 0, total: 0 });
       return;
     }
     const filtered = filterRows();
     if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
       dom.emptyState.style.display = 'block';
       dom.showingCountText.textContent = t('table.emptyTitle');
       return;
@@ -2351,80 +2416,241 @@
     dom.emptyState.style.display = 'none';
     dom.showingCountText.textContent = t('table.showingCount', { count: filtered.length, total: state.rawRows.length });
 
-    filtered.forEach(({ row, originalIndex }) => {
-      const isSent = isRowSent(row, originalIndex);
-      const phoneInfo = normalizePhone(row[state.phoneColumn]);
-      const compiledMsg = compileMessage(state.currentTemplate, row);
-      const waUrl = phoneInfo.isValid ? generateWaUrl(phoneInfo.formatted, compiledMsg) : '';
-      const guestName = (row['Nama'] || row['Name'] || '-').trim();
-      const sapaan = (row['Sapaan'] || '').trim();
-      const label = (row['Label'] || '').trim();
-      const link = (row['Link'] || '').trim();
-      const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+    const isMobile = window.innerWidth <= 768;
 
-      // 1. Desktop Table Row
-      const tr = document.createElement('tr');
-      tr.dataset.key = getRowKey(row, originalIndex);
-      if (isSent) tr.classList.add('row-is-sent');
+    if (!isMobile) {
+      // Desktop Viewport: Render desktop <tr>s only, clear mobile cards list to save DOM
+      if (dom.mobileCardsList) dom.mobileCardsList.innerHTML = '';
 
-      const tdNo = document.createElement('td');
-      tdNo.className = 'col-num';
-      tdNo.textContent = originalIndex + 1;
+      const rowsHtml = filtered.map(({ row, originalIndex }) => {
+        const rowKey = getRowKey(row, originalIndex);
+        const isSent = isRowSent(row, originalIndex);
+        const phoneInfo = normalizePhone(row[state.phoneColumn]);
+        const guestName = (row['Nama'] || row['Name'] || '-').trim();
+        const label = (row['Label'] || '').trim();
+        const link = (row['Link'] || '').trim();
+        const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+        const currentRsvp = getRowRsvp(row, originalIndex);
+        const rsvpConfig = getRsvpConfig(currentRsvp);
+        const side = getGuestSide(row);
 
-      const tdStatus = document.createElement('td');
-      tdStatus.className = 'col-status';
-      const btnStatus = document.createElement('button');
-      btnStatus.type = 'button';
-      btnStatus.className = `status-pill-btn ${isSent ? 'status-sent' : 'status-pending'}`;
-      btnStatus.innerHTML = isSent
-        ? `<i data-lucide="check-circle-2" style="width:14px;height:14px;"></i> ${t('card.statusSent')}`
-        : `<i data-lucide="clock" style="width:14px;height:14px;"></i> ${t('card.statusPending')}`;
-      btnStatus.title = isSent ? t('card.toggleToPending') : t('card.toggleToSent');
-      btnStatus.addEventListener('click', async () => {
-        const next = !isRowSent(row, originalIndex);
-        await setRowSent(row, originalIndex, next);
-        renderTable();
-        showToast(next ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }), 'success');
-      });
-      tdStatus.appendChild(btnStatus);
+        let chips = `<span class="meta-chip meta-chip-blue">👥 ${formatPaxText(pax)}</span>`;
+        const sideBadge = getSideBadgeHtml(side);
+        if (sideBadge) chips += sideBadge;
+        if (label && label !== '-' && label !== '--') chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
 
-      // Desktop RSVP Status Cell with Interactive Micro-Menu
-      const currentRsvp = getRowRsvp(row, originalIndex);
-      const rsvpConfig = getRsvpConfig(currentRsvp);
+        return `
+          <tr data-key="${escapeHtml(rowKey)}" class="${isSent ? 'row-is-sent' : ''}">
+            <td class="col-num">${originalIndex + 1}</td>
+            <td class="col-status">
+              <button type="button" class="status-pill-btn ${isSent ? 'status-sent' : 'status-pending'}" data-action="toggle-status" data-index="${originalIndex}" title="${isSent ? t('card.toggleToPending') : t('card.toggleToSent')}">
+                ${getIconSvg(isSent ? 'check-circle-2' : 'clock', { style: 'width:14px;height:14px;' })} ${isSent ? t('card.statusSent') : t('card.statusPending')}
+              </button>
+            </td>
+            <td class="col-rsvp">
+              <div class="rsvp-cell-wrapper">
+                <button type="button" class="status-rsvp-btn ${rsvpConfig.class}" data-action="toggle-rsvp-menu" data-index="${originalIndex}" title="Click to change RSVP status">
+                  <span>${rsvpConfig.emoji} ${t(rsvpConfig.labelKey)}</span> ${getIconSvg('chevron-down', { className: 'rsvp-arrow-icon', style: 'width:11px;height:11px;' })}
+                </button>
+                <div class="rsvp-micro-menu" style="display:none;">
+                  <button type="button" class="rsvp-menu-item ${currentRsvp === 'attending' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="attending" data-index="${originalIndex}">
+                    <span>🟢</span> <span>${t('rsvp.attending')}</span>
+                  </button>
+                  <button type="button" class="rsvp-menu-item ${currentRsvp === 'declined' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="declined" data-index="${originalIndex}">
+                    <span>🔴</span> <span>${t('rsvp.declined')}</span>
+                  </button>
+                  <button type="button" class="rsvp-menu-item ${currentRsvp === 'maybe' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="maybe" data-index="${originalIndex}">
+                    <span>🟡</span> <span>${t('rsvp.maybe')}</span>
+                  </button>
+                  <button type="button" class="rsvp-menu-item ${currentRsvp === 'pending' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="pending" data-index="${originalIndex}">
+                    <span>⚪</span> <span>${t('rsvp.pending')}</span>
+                  </button>
+                </div>
+              </div>
+            </td>
+            <td class="col-name">
+              <div class="guest-name-cell">
+                <div class="guest-name-text">${escapeHtml(guestName)}</div>
+                <div class="guest-meta-tags">${chips}</div>
+              </div>
+            </td>
+            <td class="col-phone phone-cell-text">
+              ${phoneInfo.isValid
+                ? `<span class="phone-valid">${getIconSvg('check', { style: 'width:14px;height:14px;' })} +${escapeHtml(phoneInfo.formatted)}</span>`
+                : `<span class="phone-empty">${getIconSvg('phone-off', { style: 'width:12px;height:12px;' })} ${t('card.withoutPhone')}</span>`}
+            </td>
+            <td class="col-link">
+              ${(link && link.startsWith('http'))
+                ? `<a href="${escapeHtml(link)}" target="_blank" class="link-url-text" title="${escapeHtml(link)}">${escapeHtml(link)}</a>`
+                : `<span style="color:var(--slate-400);">-</span>`}
+            </td>
+            <td class="col-actions">
+              <div class="action-buttons-group">
+                <button type="button" class="btn-send-wa ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}" data-action="send-wa" data-index="${originalIndex}">
+                  ${getIconSvg('send', { style: 'width:13px;height:13px;' })} ${t('card.sendWa')}
+                </button>
+                <button type="button" class="btn-icon-action btn-copy-link ${!phoneInfo.isValid ? 'btn-action-disabled' : ''}" data-action="copy-link" data-index="${originalIndex}" title="${t('card.copyLink')}">
+                  ${getIconSvg('link', { style: 'width:13px;height:13px;' })}
+                </button>
+                <button type="button" class="btn-icon-action btn-copy-msg" data-action="copy-msg" data-index="${originalIndex}" title="${t('card.copyMsg')}">
+                  ${getIconSvg('copy', { style: 'width:13px;height:13px;' })}
+                </button>
+                <button type="button" class="btn-icon-action btn-view-preview" data-action="view-preview" data-index="${originalIndex}" title="${t('card.viewDetail')}">
+                  ${getIconSvg('eye', { style: 'width:13px;height:13px;' })}
+                </button>
+                <button type="button" class="btn-icon-action btn-action-delete btn-delete-row" data-action="delete-row" data-index="${originalIndex}" title="${t('card.deleteGuestTitle', { name: guestName })}">
+                  ${getIconSvg('trash-2', { style: 'width:13px;height:13px;' })}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      tbody.innerHTML = rowsHtml;
+    } else {
+      // Mobile Viewport: Render mobile cards only, clear desktop tbody to save DOM
+      tbody.innerHTML = '';
+      if (!dom.mobileCardsList) return;
 
-      const tdRsvp = document.createElement('td');
-      tdRsvp.className = 'col-rsvp';
-      const rsvpWrapper = document.createElement('div');
-      rsvpWrapper.className = 'rsvp-cell-wrapper';
+      const cardsHtml = filtered.map(({ row, originalIndex }) => {
+        const rowKey = getRowKey(row, originalIndex);
+        const isSent = isRowSent(row, originalIndex);
+        const phoneInfo = normalizePhone(row[state.phoneColumn]);
+        const guestName = (row['Nama'] || row['Name'] || '-').trim();
+        const label = (row['Label'] || '').trim();
+        const link = (row['Link'] || '').trim();
+        const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
+        const currentRsvp = getRowRsvp(row, originalIndex);
+        const rsvpConfig = getRsvpConfig(currentRsvp);
+        const side = getGuestSide(row);
+        const note = getGuestNote(row);
+        const isExpanded = state.expandedGuestIndex === originalIndex;
 
-      const btnRsvp = document.createElement('button');
-      btnRsvp.type = 'button';
-      btnRsvp.className = `status-rsvp-btn ${rsvpConfig.class}`;
-      btnRsvp.innerHTML = `<span>${rsvpConfig.emoji} ${t(rsvpConfig.labelKey)}</span> <i data-lucide="chevron-down" class="rsvp-arrow-icon" style="width:11px;height:11px;"></i>`;
-      btnRsvp.title = 'Click to change RSVP status';
+        return `
+          <div class="mobile-guest-card ${isSent ? 'card-sent' : ''} ${isExpanded ? 'is-expanded' : ''}" data-index="${originalIndex}" data-key="${escapeHtml(rowKey)}">
+            <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}" data-action="toggle-card" data-index="${originalIndex}">
+              <button type="button" class="mobile-status-btn ${isSent ? 'status-sent' : 'status-pending'}" data-action="toggle-status" data-index="${originalIndex}" title="${isSent ? t('card.toggleToPending') : t('card.toggleToSent')}" aria-label="${isSent ? t('card.statusSent') : t('card.statusPending')}">
+                ${getIconSvg(isSent ? 'check' : 'clock', { style: 'width:18px;height:18px;' })}
+              </button>
+              <div class="mobile-guest-header-main flex-1 min-w-0">
+                <div class="mobile-guest-title-row flex items-center gap-2 min-w-0 w-full">
+                  <span class="mobile-guest-num text-xs font-bold">#${originalIndex + 1}</span>
+                  <span class="mobile-guest-name font-semibold truncate whitespace-nowrap">${escapeHtml(guestName)}</span>
+                </div>
+                <div class="mobile-guest-sub-row flex flex-wrap items-center gap-1.5 text-xs mt-1">
+                  <span class="mobile-pax-badge text-xs">${getIconSvg('users', { style: 'width:11px;height:11px;' })} ${formatPaxText(pax)}</span>
+                  <span class="mobile-rsvp-badge ${rsvpConfig.class}">${rsvpConfig.emoji} ${t(rsvpConfig.labelKey)}</span>
+                  ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa text-xs">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky text-xs">💼 Riefky</span>` : '')}
+                  ${label ? `<span class="mobile-category-badge text-xs">${escapeHtml(label)}</span>` : ''}
+                </div>
+              </div>
+              <div class="mobile-guest-header-actions pointer-events-none flex items-center justify-center shrink-0">
+                <span class="mobile-chevron-wrap pointer-events-none">
+                  ${getIconSvg('chevron-down', { className: 'mobile-chevron-icon', style: 'width:16px;height:16px;' })}
+                </span>
+              </div>
+            </div>
 
-      const microMenu = document.createElement('div');
-      microMenu.className = 'rsvp-micro-menu';
-      microMenu.style.display = 'none';
+            <div class="mobile-guest-drawer">
+              <div class="mobile-drawer-inner">
+                <div class="mobile-drawer-meta">
+                  ${side ? `<div class="mobile-meta-item"><strong>${t('card.metaSide')}:</strong> ${getSideBadgeHtml(side)}</div>` : ''}
+                  ${label ? `<div class="mobile-meta-item"><strong>${t('card.metaCategory')}:</strong> ${escapeHtml(label)}</div>` : ''}
+                  ${(note && !isNoteRedundantWithSide(note, side)) ? `<div class="mobile-meta-item"><strong>${t('card.metaNote')}:</strong> ${escapeHtml(note)}</div>` : ''}
+                  <div class="mobile-meta-item">
+                    <strong>${t('card.metaPhone')}:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">' + t('card.withoutPhone') + '</em>'}
+                  </div>
+                  ${(link && link.startsWith('http')) ? `
+                    <div class="mobile-meta-item">
+                      <strong>${t('card.metaInvitation')}:</strong> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="mobile-meta-link">${escapeHtml(link)}</a>
+                    </div>
+                  ` : ''}
+                </div>
 
-      ['attending', 'declined', 'maybe', 'pending'].forEach(st => {
-        const itemCfg = getRsvpConfig(st);
-        const itemBtn = document.createElement('button');
-        itemBtn.type = 'button';
-        itemBtn.className = `rsvp-menu-item ${st === currentRsvp ? 'active' : ''}`;
-        itemBtn.innerHTML = `<span>${itemCfg.emoji}</span> <span>${t(itemCfg.labelKey)}</span>`;
-        itemBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          microMenu.style.display = 'none';
-          rsvpWrapper.classList.remove('is-open');
-          await setRowRsvp(row, originalIndex, st);
-          showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
-        });
-        microMenu.appendChild(itemBtn);
-      });
+                <!-- Mobile Drawer RSVP Segmented Control -->
+                <div class="mobile-rsvp-section">
+                  <div class="mobile-rsvp-label">${getIconSvg('calendar-check', { style: 'width:13px;height:13px;' })} <span>${t('table.thRsvp')}</span></div>
+                  <div class="mobile-rsvp-segmented">
+                    <button type="button" class="mobile-rsvp-seg-btn rsvp-attending ${currentRsvp === 'attending' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="attending" data-index="${originalIndex}">🟢 ${t('rsvp.attending')}</button>
+                    <button type="button" class="mobile-rsvp-seg-btn rsvp-declined ${currentRsvp === 'declined' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="declined" data-index="${originalIndex}">🔴 ${t('rsvp.declined')}</button>
+                    <button type="button" class="mobile-rsvp-seg-btn rsvp-maybe ${currentRsvp === 'maybe' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="maybe" data-index="${originalIndex}">🟡 ${t('rsvp.maybe')}</button>
+                    <button type="button" class="mobile-rsvp-seg-btn rsvp-pending ${currentRsvp === 'pending' ? 'active' : ''}" data-action="set-rsvp" data-rsvp="pending" data-index="${originalIndex}">⚪ ${t('rsvp.pending')}</button>
+                  </div>
+                </div>
 
-      btnRsvp.addEventListener('click', (e) => {
+                <div class="mobile-drawer-actions">
+                  <button type="button" class="btn btn-primary btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''} w-full min-h-[44px]" data-action="send-wa" data-index="${originalIndex}">
+                    ${getIconSvg('send', { size: 16 })} ${t('card.sendWa')}
+                  </button>
+                  <button type="button" class="btn btn-outline btn-drawer-copy-link ${(!phoneInfo.isValid && !link) ? 'btn-action-disabled' : ''} w-full min-h-[44px]" data-action="copy-link" data-index="${originalIndex}">
+                    ${getIconSvg('link', { size: 16 })} ${t('card.copyLink')}
+                  </button>
+                  <button type="button" class="btn btn-outline btn-drawer-toggle-sent w-full min-h-[44px]" data-action="toggle-status" data-index="${originalIndex}">
+                    ${getIconSvg(isSent ? 'rotate-ccw' : 'check', { size: 16 })} ${isSent ? t('card.markAsPending') : t('card.markAsSent')}
+                  </button>
+                  <div class="mobile-drawer-actions-secondary">
+                    <button type="button" class="btn btn-outline btn-drawer-preview min-h-[44px]" data-action="view-preview" data-index="${originalIndex}">
+                      ${getIconSvg('eye', { size: 16 })} ${t('card.preview')}
+                    </button>
+                    <button type="button" class="btn btn-outline btn-drawer-copy-msg min-h-[44px]" data-action="copy-msg" data-index="${originalIndex}">
+                      ${getIconSvg('copy', { size: 16 })} ${t('card.copyMsg')}
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-drawer-delete min-h-[44px]" data-action="delete-row" data-index="${originalIndex}">
+                      ${getIconSvg('trash-2', { size: 16 })} ${t('card.deleteGuest')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      dom.mobileCardsList.innerHTML = cardsHtml;
+    }
+  }
+
+  async function handleTableAction(e) {
+    const actionBtn = e.target.closest('[data-action]');
+    if (!actionBtn) return;
+
+    const action = actionBtn.dataset.action;
+    const index = parseInt(actionBtn.dataset.index, 10);
+    if (isNaN(index) || index < 0 || index >= state.rawRows.length) return;
+
+    const row = state.rawRows[index];
+    const guestName = (row['Nama'] || row['Name'] || '-').trim();
+    const phoneInfo = normalizePhone(row[state.phoneColumn]);
+    const compiledMsg = compileMessage(state.currentTemplate, row);
+    const waUrl = phoneInfo.isValid ? generateWaUrl(phoneInfo.formatted, compiledMsg) : '';
+    const link = (row['Link'] || '').trim();
+
+    switch (action) {
+      case 'toggle-status': {
         e.stopPropagation();
+        const previousState = isRowSent(row, index);
+        const nextState = !previousState;
+        await setRowSent(row, index, nextState);
+        renderTable();
+        showToast(
+          nextState ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }),
+          'success',
+          {
+            label: t('toast.undo'),
+            onClick: async () => {
+              await setRowSent(row, index, previousState);
+              renderTable();
+              showToast(t('toast.statusReverted', { name: guestName }), 'info');
+            }
+          }
+        );
+        break;
+      }
+      case 'toggle-rsvp-menu': {
+        e.stopPropagation();
+        const rsvpWrapper = actionBtn.closest('.rsvp-cell-wrapper');
+        if (!rsvpWrapper) return;
+        const microMenu = rsvpWrapper.querySelector('.rsvp-micro-menu');
+        if (!microMenu) return;
         document.querySelectorAll('.rsvp-micro-menu').forEach(m => {
           if (m !== microMenu) {
             m.style.display = 'none';
@@ -2434,310 +2660,65 @@
         const isOpen = microMenu.style.display !== 'none';
         microMenu.style.display = isOpen ? 'none' : 'flex';
         rsvpWrapper.classList.toggle('is-open', !isOpen);
-      });
-
-      rsvpWrapper.appendChild(btnRsvp);
-      rsvpWrapper.appendChild(microMenu);
-      tdRsvp.appendChild(rsvpWrapper);
-
-      const side = getGuestSide(row);
-      const note = getGuestNote(row);
-
-      const tdName = document.createElement('td');
-      tdName.className = 'col-name';
-      let chips = '';
-      chips += `<span class="meta-chip meta-chip-blue">👥 ${formatPaxText(pax)}</span>`;
-      const sideBadge = getSideBadgeHtml(side);
-      if (sideBadge) chips += sideBadge;
-      if (label && label !== '-' && label !== '--') chips += `<span class="meta-chip">${escapeHtml(label)}</span>`;
-      tdName.innerHTML = `<div class="guest-name-cell"><div class="guest-name-text">${escapeHtml(guestName)}</div><div class="guest-meta-tags">${chips}</div></div>`;
-
-      const tdPhone = document.createElement('td');
-      tdPhone.className = 'col-phone phone-cell-text';
-      tdPhone.innerHTML = phoneInfo.isValid
-        ? `<span class="phone-valid"><i data-lucide="check" style="width:14px;height:14px;"></i> +${escapeHtml(phoneInfo.formatted)}</span>`
-        : `<span class="phone-empty"><i data-lucide="phone-off" style="width:12px;height:12px;"></i> ${t('card.withoutPhone')}</span>`;
-
-      const tdLink = document.createElement('td');
-      tdLink.className = 'col-link';
-      tdLink.innerHTML = (link && link.startsWith('http'))
-        ? `<a href="${escapeHtml(link)}" target="_blank" class="link-url-text" title="${escapeHtml(link)}">${escapeHtml(link)}</a>`
-        : `<span style="color:var(--slate-400);">-</span>`;
-
-      const tdActions = document.createElement('td');
-      tdActions.className = 'col-actions';
-      const actionsWrapper = document.createElement('div');
-      actionsWrapper.className = 'action-buttons-group';
-
-      const btnSend = document.createElement('button');
-      btnSend.type = 'button';
-      btnSend.className = 'btn-send-wa';
-      btnSend.innerHTML = `<i data-lucide="send" style="width:13px;height:13px;"></i> ${t('card.sendWa')}`;
-      if (!phoneInfo.isValid) {
-        btnSend.classList.add('btn-action-disabled');
-      } else {
-        btnSend.addEventListener('click', async () => {
-          window.open(waUrl, '_blank');
-          await setRowSent(row, originalIndex, true);
-          renderTable();
-          showToast(t('toast.openingWa', { name: guestName }), 'success');
-        });
+        break;
       }
-
-      const btnCopyLink = document.createElement('button');
-      btnCopyLink.type = 'button';
-      btnCopyLink.className = 'btn-icon-action btn-copy-link';
-      btnCopyLink.innerHTML = `<i data-lucide="link" style="width:13px;height:13px;"></i>`;
-      btnCopyLink.title = t('card.copyLink');
-      if (!phoneInfo.isValid) {
-        btnCopyLink.classList.add('btn-action-disabled');
-      } else {
-        btnCopyLink.addEventListener('click', () => copyToClipboard(waUrl, t('toast.linkCopied', { name: guestName })));
+      case 'set-rsvp': {
+        e.stopPropagation();
+        const rsvp = actionBtn.dataset.rsvp;
+        const rsvpWrapper = actionBtn.closest('.rsvp-cell-wrapper');
+        if (rsvpWrapper) {
+          const microMenu = rsvpWrapper.querySelector('.rsvp-micro-menu');
+          if (microMenu) microMenu.style.display = 'none';
+          rsvpWrapper.classList.remove('is-open');
+        }
+        await setRowRsvp(row, index, rsvp);
+        const itemCfg = getRsvpConfig(rsvp);
+        showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
+        break;
       }
-
-      const btnCopyMsg = document.createElement('button');
-      btnCopyMsg.type = 'button';
-      btnCopyMsg.className = 'btn-icon-action btn-copy-msg';
-      btnCopyMsg.innerHTML = `<i data-lucide="copy" style="width:13px;height:13px;"></i>`;
-      btnCopyMsg.title = t('card.copyMsg');
-      btnCopyMsg.addEventListener('click', () => copyToClipboard(compiledMsg, t('toast.msgCopied', { name: guestName })));
-
-      const btnView = document.createElement('button');
-      btnView.type = 'button';
-      btnView.className = 'btn-icon-action btn-view-preview';
-      btnView.innerHTML = `<i data-lucide="eye" style="width:13px;height:13px;"></i>`;
-      btnView.title = t('card.viewDetail');
-      btnView.addEventListener('click', () => openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo));
-
-      const btnDelete = document.createElement('button');
-      btnDelete.type = 'button';
-      btnDelete.className = 'btn-icon-action btn-action-delete btn-delete-row';
-      btnDelete.innerHTML = `<i data-lucide="trash-2" style="width:13px;height:13px;"></i>`;
-      btnDelete.title = t('card.deleteGuestTitle', { name: guestName });
-      btnDelete.addEventListener('click', () => confirmDeleteGuest(originalIndex));
-
-      actionsWrapper.appendChild(btnSend);
-      actionsWrapper.appendChild(btnCopyLink);
-      actionsWrapper.appendChild(btnCopyMsg);
-      actionsWrapper.appendChild(btnView);
-      actionsWrapper.appendChild(btnDelete);
-      tdActions.appendChild(actionsWrapper);
-
-      tr.appendChild(tdNo);
-      tr.appendChild(tdStatus);
-      tr.appendChild(tdRsvp);
-      tr.appendChild(tdName);
-      tr.appendChild(tdPhone);
-      tr.appendChild(tdLink);
-      tr.appendChild(tdActions);
-      tbody.appendChild(tr);
-
-      // 2. Native Mobile Touch Card with Smooth Single-Accordion
-      if (dom.mobileCardsList) {
-        const isExpanded = state.expandedGuestIndex === originalIndex;
-        const card = document.createElement('div');
-        card.className = `mobile-guest-card ${isSent ? 'card-sent' : ''} ${isExpanded ? 'is-expanded' : ''}`;
-        card.dataset.index = originalIndex;
-        card.dataset.key = getRowKey(row, originalIndex);
-
-        card.innerHTML = `
-          <div class="mobile-guest-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
-            <button type="button" class="mobile-status-btn ${isSent ? 'status-sent' : 'status-pending'}" title="${isSent ? t('card.toggleToPending') : t('card.toggleToSent')}" aria-label="${isSent ? t('card.statusSent') : t('card.statusPending')}">
-              <i data-lucide="${isSent ? 'check' : 'clock'}" style="width:18px;height:18px;"></i>
-            </button>
-            <div class="mobile-guest-header-main flex-1 min-w-0">
-              <div class="mobile-guest-title-row flex items-center gap-2 min-w-0 w-full">
-                <span class="mobile-guest-num text-xs font-bold">#${originalIndex + 1}</span>
-                <span class="mobile-guest-name font-semibold truncate whitespace-nowrap">${escapeHtml(guestName)}</span>
-              </div>
-              <div class="mobile-guest-sub-row flex flex-wrap items-center gap-1.5 text-xs mt-1">
-                <span class="mobile-pax-badge text-xs"><i data-lucide="users" style="width:11px;height:11px;"></i> ${formatPaxText(pax)}</span>
-                <span class="mobile-rsvp-badge ${rsvpConfig.class}">${rsvpConfig.emoji} ${t(rsvpConfig.labelKey)}</span>
-                ${side === 'dhifa' ? `<span class="mobile-side-badge side-dhifa text-xs">🌸 Dhifa</span>` : (side === 'riefky' ? `<span class="mobile-side-badge side-riefky text-xs">💼 Riefky</span>` : '')}
-                ${label ? `<span class="mobile-category-badge text-xs">${escapeHtml(label)}</span>` : ''}
-              </div>
-            </div>
-            <div class="mobile-guest-header-actions pointer-events-none flex items-center justify-center shrink-0">
-              <span class="mobile-chevron-wrap pointer-events-none">
-                <i data-lucide="chevron-down" class="mobile-chevron-icon" style="width:16px;height:16px;"></i>
-              </span>
-            </div>
-          </div>
-
-          <div class="mobile-guest-drawer">
-            <div class="mobile-drawer-inner">
-              <div class="mobile-drawer-meta">
-                ${side ? `<div class="mobile-meta-item"><strong>${t('card.metaSide')}:</strong> ${getSideBadgeHtml(side)}</div>` : ''}
-                ${label ? `<div class="mobile-meta-item"><strong>${t('card.metaCategory')}:</strong> ${escapeHtml(label)}</div>` : ''}
-                ${(note && !isNoteRedundantWithSide(note, side)) ? `<div class="mobile-meta-item"><strong>${t('card.metaNote')}:</strong> ${escapeHtml(note)}</div>` : ''}
-                <div class="mobile-meta-item">
-                  <strong>${t('card.metaPhone')}:</strong> ${phoneInfo.isValid ? '+' + escapeHtml(phoneInfo.formatted) : '<em style="color:#94a3b8">' + t('card.withoutPhone') + '</em>'}
-                </div>
-                ${(link && link.startsWith('http')) ? `
-                  <div class="mobile-meta-item">
-                    <strong>${t('card.metaInvitation')}:</strong> <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="mobile-meta-link">${escapeHtml(link)}</a>
-                  </div>
-                ` : ''}
-              </div>
-
-              <!-- Mobile Drawer RSVP Segmented Control -->
-              <div class="mobile-rsvp-section">
-                <div class="mobile-rsvp-label"><i data-lucide="calendar-check" style="width:13px;height:13px;"></i> <span>${t('table.thRsvp')}</span></div>
-                <div class="mobile-rsvp-segmented">
-                  <button type="button" class="mobile-rsvp-seg-btn rsvp-attending ${currentRsvp === 'attending' ? 'active' : ''}" data-rsvp="attending">🟢 ${t('rsvp.attending')}</button>
-                  <button type="button" class="mobile-rsvp-seg-btn rsvp-declined ${currentRsvp === 'declined' ? 'active' : ''}" data-rsvp="declined">🔴 ${t('rsvp.declined')}</button>
-                  <button type="button" class="mobile-rsvp-seg-btn rsvp-maybe ${currentRsvp === 'maybe' ? 'active' : ''}" data-rsvp="maybe">🟡 ${t('rsvp.maybe')}</button>
-                  <button type="button" class="mobile-rsvp-seg-btn rsvp-pending ${currentRsvp === 'pending' ? 'active' : ''}" data-rsvp="pending">⚪ ${t('rsvp.pending')}</button>
-                </div>
-              </div>
-
-              <div class="mobile-drawer-actions">
-                <button type="button" class="btn btn-primary btn-drawer-send ${!phoneInfo.isValid ? 'btn-action-disabled' : ''} w-full min-h-[44px]">
-                  <i data-lucide="send"></i> ${t('card.sendWa')}
-                </button>
-                <button type="button" class="btn btn-outline btn-drawer-copy-link ${(!phoneInfo.isValid && !link) ? 'btn-action-disabled' : ''} w-full min-h-[44px]">
-                  <i data-lucide="link"></i> ${t('card.copyLink')}
-                </button>
-                <button type="button" class="btn btn-outline btn-drawer-toggle-sent w-full min-h-[44px]">
-                  <i data-lucide="${isSent ? 'rotate-ccw' : 'check'}"></i> ${isSent ? t('card.markAsPending') : t('card.markAsSent')}
-                </button>
-                <div class="mobile-drawer-actions-secondary">
-                  <button type="button" class="btn btn-outline btn-drawer-preview min-h-[44px]">
-                    <i data-lucide="eye"></i> ${t('card.preview')}
-                  </button>
-                  <button type="button" class="btn btn-outline btn-drawer-copy-msg min-h-[44px]">
-                    <i data-lucide="copy"></i> ${t('card.copyMsg')}
-                  </button>
-                  <button type="button" class="btn btn-outline-danger btn-drawer-delete min-h-[44px]">
-                    <i data-lucide="trash-2"></i> ${t('card.deleteGuest')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-
-        // Click anywhere on row header to expand/collapse (smooth accordion with viewport anchor)
-        const rowHeader = card.querySelector('.mobile-guest-row-header');
-        rowHeader.addEventListener('click', (e) => {
-          if (e.target.closest('.mobile-status-btn')) return;
-          toggleMobileCard(card, originalIndex);
-        });
-
-        rowHeader.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            if (e.target.closest('.mobile-status-btn')) return;
-            e.preventDefault();
-            toggleMobileCard(card, originalIndex);
-          }
-        });
-
-        // Quick status toggle directly on status icon or drawer button, with Undo toast
-        const handleStatusToggle = async (e) => {
-          if (e) e.stopPropagation();
-          const previousState = isRowSent(row, originalIndex);
-          const nextState = !previousState;
-          await setRowSent(row, originalIndex, nextState);
-          renderTable();
-          showToast(
-            nextState ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }),
-            'success',
-            {
-              label: t('toast.undo'),
-              onClick: async () => {
-                await setRowSent(row, originalIndex, previousState);
-                renderTable();
-                showToast(t('toast.statusReverted', { name: guestName }), 'info');
-              }
-            }
-          );
-        };
-
-        const statusBtn = card.querySelector('.mobile-status-btn');
-        if (statusBtn) {
-          statusBtn.addEventListener('click', handleStatusToggle);
+      case 'send-wa': {
+        e.stopPropagation();
+        if (!phoneInfo.isValid) {
+          showToast(t('toast.invalidPhone'), 'danger');
+          return;
         }
-
-        const btnToggleSent = card.querySelector('.btn-drawer-toggle-sent');
-        if (btnToggleSent) {
-          btnToggleSent.addEventListener('click', handleStatusToggle);
-        }
-
-        // Mobile Drawer RSVP Segmented Buttons
-        card.querySelectorAll('.mobile-rsvp-seg-btn').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const st = btn.dataset.rsvp;
-            await setRowRsvp(row, originalIndex, st);
-            const itemCfg = getRsvpConfig(st);
-            showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
-          });
-        });
-
-        // Drawer buttons
-        const btnPrev = card.querySelector('.btn-drawer-preview');
-        if (btnPrev) {
-          btnPrev.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openPreviewModal(row, originalIndex, compiledMsg, waUrl, phoneInfo);
-          });
-        }
-
-        const btnCopyLinkMobile = card.querySelector('.btn-drawer-copy-link');
-        if (btnCopyLinkMobile) {
-          const targetLink = phoneInfo.isValid ? waUrl : (link || '');
-          if (targetLink) {
-            btnCopyLinkMobile.addEventListener('click', (e) => {
-              e.stopPropagation();
-              copyToClipboard(targetLink, t('toast.linkCopied', { name: guestName }));
-            });
-          } else {
-            btnCopyLinkMobile.addEventListener('click', (e) => {
-              e.stopPropagation();
-              showToast(t('toast.noLinkToCopy'), 'danger');
-            });
-          }
-        }
-
-        const btnCopyMsgMobile = card.querySelector('.btn-drawer-copy-msg');
-        if (btnCopyMsgMobile) {
-          btnCopyMsgMobile.addEventListener('click', (e) => {
-            e.stopPropagation();
-            copyToClipboard(compiledMsg, t('toast.msgCopied', { name: guestName }));
-          });
-        }
-
-        const btnDeleteMobile = card.querySelector('.btn-drawer-delete');
-        if (btnDeleteMobile) {
-          btnDeleteMobile.addEventListener('click', (e) => {
-            e.stopPropagation();
-            confirmDeleteGuest(originalIndex);
-          });
-        }
-
-        const btnSend = card.querySelector('.btn-drawer-send');
-        if (btnSend) {
-          if (phoneInfo.isValid) {
-            btnSend.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              window.open(waUrl, '_blank');
-              await setRowSent(row, originalIndex, true);
-              renderTable();
-              showToast(t('toast.openingWa', { name: guestName }), 'success');
-            });
-          } else {
-            btnSend.addEventListener('click', (e) => {
-              e.stopPropagation();
-              showToast(t('toast.invalidPhone'), 'danger');
-            });
-          }
-        }
-
-        dom.mobileCardsList.appendChild(card);
+        window.open(waUrl, '_blank');
+        await setRowSent(row, index, true);
+        renderTable();
+        showToast(t('toast.openingWa', { name: guestName }), 'success');
+        break;
       }
-    });
-
-    setupLucideIcons();
+      case 'copy-link': {
+        e.stopPropagation();
+        const targetLink = phoneInfo.isValid ? waUrl : (link || '');
+        if (targetLink) {
+          copyToClipboard(targetLink, t('toast.linkCopied', { name: guestName }));
+        } else {
+          showToast(t('toast.noLinkToCopy'), 'danger');
+        }
+        break;
+      }
+      case 'copy-msg': {
+        e.stopPropagation();
+        copyToClipboard(compiledMsg, t('toast.msgCopied', { name: guestName }));
+        break;
+      }
+      case 'view-preview': {
+        e.stopPropagation();
+        openPreviewModal(row, index, compiledMsg, waUrl, phoneInfo);
+        break;
+      }
+      case 'delete-row': {
+        e.stopPropagation();
+        confirmDeleteGuest(index);
+        break;
+      }
+      case 'toggle-card': {
+        const card = actionBtn.closest('.mobile-guest-card');
+        if (card) toggleMobileCard(card, index);
+        break;
+      }
+    }
   }
 
   function toggleMobileCard(targetCard, index) {
@@ -3738,6 +3719,47 @@
 
     window.addEventListener('focus', () => {
       reloadGuestsAndStatusesFromCloud();
+    });
+
+    // Delegated click listeners for high-performance table & card actions
+    if (dom.recipientsTableBody) {
+      dom.recipientsTableBody.addEventListener('click', handleTableAction);
+    }
+    if (dom.mobileCardsList) {
+      dom.mobileCardsList.addEventListener('click', handleTableAction);
+      dom.mobileCardsList.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const header = e.target.closest('.mobile-guest-row-header');
+          if (!header || e.target.closest('.mobile-status-btn')) return;
+          e.preventDefault();
+          const index = parseInt(header.dataset.index, 10);
+          const card = header.closest('.mobile-guest-card');
+          if (card && !isNaN(index)) toggleMobileCard(card, index);
+        }
+      });
+    }
+
+    // Viewport-aware rendering: re-render automatically when switching between mobile (< 768px) and desktop
+    const mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+    const handleViewportChange = () => {
+      renderTable();
+    };
+    if (mobileMediaQuery.addEventListener) {
+      mobileMediaQuery.addEventListener('change', handleViewportChange);
+    } else if (mobileMediaQuery.addListener) {
+      mobileMediaQuery.addListener(handleViewportChange);
+    }
+
+    // Visibility-aware smart polling: pause polling when tab is hidden, resume/refresh when tab is visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopFallbackPolling();
+      } else {
+        reloadGuestsAndStatusesFromCloud();
+        if (!realtimeChannel || realtimeChannel.state !== 'joined') {
+          startFallbackPolling(5000);
+        }
+      }
     });
   }
 
