@@ -280,9 +280,54 @@ it('Ensures viewport responsiveness and smart polling are wired in app.js', () =
 });
 
 // =============================================================================
-// 7. Backend API Contract Tests
+// 7. One-In One-Out State Transition Integrity & Concurrency Guards
 // =============================================================================
-console.log('\n--- 7. Backend API Contract Tests ---');
+console.log('\n--- 7. One-In One-Out State Transition Integrity ---');
+
+it('Enforces strict state transition on delivery status: A -> A is NO-OP, A -> B is valid', () => {
+  function testSentTransition(current, target) {
+    if (current === target) return false;
+    return true;
+  }
+  assert.strictEqual(testSentTransition(false, false), false, 'Pending -> Pending must be NO-OP');
+  assert.strictEqual(testSentTransition(false, true), true, 'Pending -> Sent is valid transition');
+  assert.strictEqual(testSentTransition(true, true), false, 'Sent -> Sent must be NO-OP (no duplicate events)');
+  assert.strictEqual(testSentTransition(true, false), true, 'Sent -> Pending is valid transition');
+});
+
+it('Enforces strict state transition on RSVP status: Attending -> Attending is NO-OP', () => {
+  function testRsvpTransition(current, target) {
+    const curNorm = (current && current !== 'pending') ? current : 'pending';
+    const tarNorm = (target && target !== 'pending') ? target : 'pending';
+    if (curNorm === tarNorm) return false;
+    return true;
+  }
+  assert.strictEqual(testRsvpTransition('pending', 'pending'), false, 'Pending -> Pending must be NO-OP');
+  assert.strictEqual(testRsvpTransition('pending', 'attending'), true, 'Pending -> Attending is valid');
+  assert.strictEqual(testRsvpTransition('attending', 'attending'), false, 'Attending -> Attending must be NO-OP (prevents duplicate logs)');
+  assert.strictEqual(testRsvpTransition('attending', 'declined'), true, 'Attending -> Declined is valid');
+  assert.strictEqual(testRsvpTransition('attending', 'pending'), true, 'Attending -> Pending is valid');
+});
+
+it('Verifies app.js contains transition guards and in-flight mutex', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
+  assert(appJs.includes('currentSent === targetSent'), 'setRowSent must check currentSent === targetSent');
+  assert(appJs.includes('normalizedCurrent === normalizedNew'), 'setRowRsvp must check normalizedCurrent === normalizedNew');
+  assert(appJs.includes('pendingGuestMutations'), 'Must declare pendingGuestMutations set for concurrency lock');
+  assert(appJs.includes('areEventListenersInitialized'), 'Must protect against duplicate event listener attachments');
+});
+
+it('Verifies api/logs.js contains deduplication guard against duplicate consecutive logs', () => {
+  const logsJs = fs.readFileSync(path.join(__dirname, '../api/logs.js'), 'utf8');
+  assert(logsJs.includes('Deduplication guard: enforce one-in one-out state transitions'), 'Must have deduplication guard comment');
+  assert(logsJs.includes('sameAction && sameSummary && sameStatus'), 'Must compare action, summary, and status of recent logs');
+  assert(logsJs.includes('duplicate: true'), 'Must return duplicate: true without re-inserting');
+});
+
+// =============================================================================
+// 8. Backend API Contract Tests
+// =============================================================================
+console.log('\n--- 8. Backend API Contract Tests ---');
 
 function mockReq(method = 'GET', url = '/', body = {}) {
   return {

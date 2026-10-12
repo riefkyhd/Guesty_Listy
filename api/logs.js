@@ -88,6 +88,34 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'action and summary are required' });
     }
 
+    // Deduplication guard: enforce one-in one-out state transitions
+    const guestKey = details?.guestKey;
+    if (guestKey) {
+      try {
+        const { data: recentLogs } = await supabase
+          .from('activity_logs')
+          .select('id, action, summary, details, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (recentLogs && recentLogs.length > 0) {
+          const lastGuestLog = recentLogs.find(l => l.details && l.details.guestKey === guestKey);
+          if (lastGuestLog) {
+            const sameAction = lastGuestLog.action === action;
+            const sameSummary = lastGuestLog.summary === summary;
+            const sameStatus = (lastGuestLog.details?.status === details?.status) && (lastGuestLog.details?.isSent === details?.isSent);
+
+            if (sameAction && sameSummary && sameStatus) {
+              // Consecutive duplicate state transition detected: return existing log without creating duplicate
+              return res.status(200).json({ ok: true, duplicate: true, log: lastGuestLog });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Deduplication check failed, proceeding with insert:', err);
+      }
+    }
+
     const ua = req.headers['user-agent'] || '';
     const deviceInfo = clientDeviceInfo || parseUserAgent(ua);
     const ipAddress = getIpAddress(req);

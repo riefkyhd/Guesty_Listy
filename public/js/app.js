@@ -1129,27 +1129,48 @@
     }
   }
 
+  const pendingGuestMutations = new Set();
+
   async function setRowSent(row, index, isSent) {
     const key = getRowKey(row, index);
     const legKey = getLegacyRowKey(row, index);
     const guestName = (row['Nama'] || row['Name'] || 'Tamu').trim();
-    if (isSent) {
-      state.sentStatuses[key] = true;
-    } else {
-      delete state.sentStatuses[key];
-      delete state.sentStatuses[legKey];
+
+    const currentSent = isRowSent(row, index);
+    const targetSent = !!isSent;
+
+    // Strict State Transition Guard: One-in One-out
+    // If the state is already targetSent, no state change occurred -> NO-OP!
+    if (currentSent === targetSent) {
+      return false;
     }
-    updateStatsAndProgress();
-    broadcastRealtimeEvent('status_updated', { guestKey: key, isSent, guestName });
-    await persistSentStatus(key, isSent);
-    if (!isSent) {
-      await persistSentStatus(legKey, false);
+
+    // In-flight concurrency lock for this guest key
+    if (pendingGuestMutations.has(key)) return false;
+    pendingGuestMutations.add(key);
+
+    try {
+      if (targetSent) {
+        state.sentStatuses[key] = true;
+      } else {
+        delete state.sentStatuses[key];
+        delete state.sentStatuses[legKey];
+      }
+      updateStatsAndProgress();
+      broadcastRealtimeEvent('status_updated', { guestKey: key, isSent: targetSent, guestName });
+      await persistSentStatus(key, targetSent);
+      if (!targetSent) {
+        await persistSentStatus(legKey, false);
+      }
+      await logActivity({
+        action: targetSent ? 'STATUS_SENT' : 'STATUS_PENDING',
+        summary: `"${guestName}" ditandai ${targetSent ? 'Sudah Kirim' : 'Belum Kirim'}`,
+        details: { guestKey: key, guestName, isSent: targetSent }
+      });
+      return true;
+    } finally {
+      pendingGuestMutations.delete(key);
     }
-    logActivity({
-      action: isSent ? 'STATUS_SENT' : 'STATUS_PENDING',
-      summary: `"${guestName}" ditandai ${isSent ? 'Sudah Kirim' : 'Belum Kirim'}`,
-      details: { guestKey: key, guestName, isSent }
-    });
   }
 
   // ===========================================================================
@@ -1208,24 +1229,44 @@
     const key = getRowKey(row, index);
     const legKey = getLegacyRowKey(row, index);
     const guestName = (row['Nama'] || row['Name'] || 'Tamu').trim();
-    if (newStatus && newStatus !== 'pending') {
-      state.rsvpStatuses[key] = newStatus;
-    } else {
-      delete state.rsvpStatuses[key];
-      delete state.rsvpStatuses[legKey];
+
+    const currentRsvp = getRowRsvp(row, index);
+    const normalizedNew = (newStatus && newStatus !== 'pending') ? newStatus : 'pending';
+    const normalizedCurrent = (currentRsvp && currentRsvp !== 'pending') ? currentRsvp : 'pending';
+
+    // Strict State Transition Guard: One-in One-out
+    // If the status is already normalizedNew, no state transition occurred -> NO-OP!
+    if (normalizedCurrent === normalizedNew) {
+      return false;
     }
-    updateStatsAndProgress();
-    renderTable();
-    broadcastRealtimeEvent('rsvp_status_updated', { guestKey: key, status: newStatus, guestName });
-    await persistRsvpStatus(key, newStatus);
-    if (!newStatus || newStatus === 'pending') {
-      await persistRsvpStatus(legKey, 'pending');
+
+    // In-flight concurrency lock for this guest key
+    if (pendingGuestMutations.has(key)) return false;
+    pendingGuestMutations.add(key);
+
+    try {
+      if (normalizedNew !== 'pending') {
+        state.rsvpStatuses[key] = normalizedNew;
+      } else {
+        delete state.rsvpStatuses[key];
+        delete state.rsvpStatuses[legKey];
+      }
+      updateStatsAndProgress();
+      renderTable();
+      broadcastRealtimeEvent('rsvp_status_updated', { guestKey: key, status: normalizedNew, guestName });
+      await persistRsvpStatus(key, normalizedNew);
+      if (normalizedNew === 'pending') {
+        await persistRsvpStatus(legKey, 'pending');
+      }
+      await logActivity({
+        action: 'RSVP_STATUS_UPDATED',
+        summary: `RSVP "${guestName}" diubah ke ${getRsvpLabel(normalizedNew)}`,
+        details: { guestKey: key, guestName, status: normalizedNew }
+      });
+      return true;
+    } finally {
+      pendingGuestMutations.delete(key);
     }
-    logActivity({
-      action: 'RSVP_STATUS_UPDATED',
-      summary: `RSVP "${guestName}" diubah ke ${getRsvpLabel(newStatus)}`,
-      details: { guestKey: key, guestName, status: newStatus }
-    });
   }
 
   // ===========================================================================
@@ -2629,20 +2670,24 @@
         e.stopPropagation();
         const previousState = isRowSent(row, index);
         const nextState = !previousState;
-        await setRowSent(row, index, nextState);
-        renderTable();
-        showToast(
-          nextState ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }),
-          'success',
-          {
-            label: t('toast.undo'),
-            onClick: async () => {
-              await setRowSent(row, index, previousState);
-              renderTable();
-              showToast(t('toast.statusReverted', { name: guestName }), 'info');
+        const changed = await setRowSent(row, index, nextState);
+        if (changed) {
+          renderTable();
+          showToast(
+            nextState ? t('toast.markedSentName', { name: guestName }) : t('toast.markedPendingName', { name: guestName }),
+            'success',
+            {
+              label: t('toast.undo'),
+              onClick: async () => {
+                const undone = await setRowSent(row, index, previousState);
+                if (undone) {
+                  renderTable();
+                  showToast(t('toast.statusReverted', { name: guestName }), 'info');
+                }
+              }
             }
-          }
-        );
+          );
+        }
         break;
       }
       case 'toggle-rsvp-menu': {
@@ -2671,9 +2716,11 @@
           if (microMenu) microMenu.style.display = 'none';
           rsvpWrapper.classList.remove('is-open');
         }
-        await setRowRsvp(row, index, rsvp);
-        const itemCfg = getRsvpConfig(rsvp);
-        showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
+        const changed = await setRowRsvp(row, index, rsvp);
+        if (changed) {
+          const itemCfg = getRsvpConfig(rsvp);
+          showToast(t('toast.rsvpUpdated', { name: guestName, status: t(itemCfg.labelKey) }), 'success');
+        }
         break;
       }
       case 'send-wa': {
@@ -2683,9 +2730,11 @@
           return;
         }
         window.open(waUrl, '_blank');
-        await setRowSent(row, index, true);
-        renderTable();
-        showToast(t('toast.openingWa', { name: guestName }), 'success');
+        const changed = await setRowSent(row, index, true);
+        if (changed) {
+          renderTable();
+          showToast(t('toast.openingWa', { name: guestName }), 'success');
+        }
         break;
       }
       case 'copy-link': {
@@ -3029,8 +3078,10 @@
     dom.btnModalSendWa.onclick = async () => {
       if (phoneInfo.isValid) {
         window.open(waUrl, '_blank');
-        await setRowSent(row, index, true);
-        renderTable();
+        const changed = await setRowSent(row, index, true);
+        if (changed) {
+          renderTable();
+        }
         closeModal();
         showToast(t('toast.openingWa', { name }), 'success');
       }
@@ -3303,9 +3354,10 @@
   }
 
   // ===========================================================================
-  // Event Listeners
-  // ===========================================================================
+  let areEventListenersInitialized = false;
   function setupEventListeners() {
+    if (areEventListenersInitialized) return;
+    areEventListenersInitialized = true;
     const handleFileUpload = (file) => {
       if (!file) return;
       processExcelFile(file);
@@ -3449,28 +3501,33 @@
         showToast(t('table.emptyTitle'), 'danger');
         return;
       }
+      const unsentGuests = filtered.filter(({ row, originalIndex }) => !isRowSent(row, originalIndex));
+      if (unsentGuests.length === 0) {
+        showToast('Semua tamu pada tampilan ini sudah berstatus Sudah Kirim.', 'info');
+        return;
+      }
       showCustomConfirm({
         title: t('confirm.markAllSentTitle'),
-        message: t('confirm.markAllSentDesc', { count: filtered.length }),
+        message: t('confirm.markAllSentDesc', { count: unsentGuests.length }),
         icon: 'check-circle-2',
         theme: 'info',
         confirmText: t('confirm.markAllSentBtn'),
         cancelText: t('confirm.cancelBtn'),
         onConfirm: async () => {
-          for (const { row, originalIndex } of filtered) {
+          for (const { row, originalIndex } of unsentGuests) {
             const key = getRowKey(row, originalIndex);
             state.sentStatuses[key] = true;
           }
           renderTable();
           updateStatsAndProgress();
           broadcastRealtimeEvent('bulk_status_updated', { sentStatuses: state.sentStatuses });
-          for (const { row, originalIndex } of filtered) {
+          for (const { row, originalIndex } of unsentGuests) {
             await persistSentStatus(getRowKey(row, originalIndex), true);
           }
           logActivity({
             action: 'STATUS_SENT',
-            summary: `Marked ${filtered.length} guests as Sent`,
-            details: { count: filtered.length }
+            summary: `Marked ${unsentGuests.length} guests as Sent`,
+            details: { count: unsentGuests.length }
           });
           showToast(t('toast.allMarkedSent'), 'success');
         }
@@ -3478,9 +3535,14 @@
     });
 
     dom.btnResetAllSent.addEventListener('click', () => {
+      const sentCount = Object.keys(state.sentStatuses).length;
+      if (sentCount === 0) {
+        showToast('Semua tamu sudah berstatus Belum Kirim.', 'info');
+        return;
+      }
       showCustomConfirm({
         title: t('confirm.resetAllSentTitle'),
-        message: t('confirm.resetAllSentDesc', { count: state.rawRows.length }),
+        message: t('confirm.resetAllSentDesc', { count: sentCount }),
         icon: 'rotate-ccw',
         theme: 'danger',
         confirmText: t('confirm.resetAllSentBtn'),
@@ -3498,7 +3560,7 @@
           logActivity({
             action: 'STATUS_RESET',
             summary: 'Reset all delivery statuses to Not Sent',
-            details: {}
+            details: { previousSentCount: sentCount }
           });
           showToast(t('toast.allResetPending'), 'success');
         }
@@ -3766,7 +3828,10 @@
   // ===========================================================================
   // App Init (after PIN unlocked)
   // ===========================================================================
+  let isAppInitialized = false;
   async function initApp() {
+    if (isAppInitialized) return;
+    isAppInitialized = true;
     setupEventListeners();
     setupLucideIcons();
     setupRealtime();
