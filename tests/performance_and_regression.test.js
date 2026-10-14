@@ -117,7 +117,55 @@ it('Identifies Abi, Umi, Papa, Mama sides accurately', () => {
 
 it('Returns null for generic notes without side affiliations', () => {
   assert.strictEqual(getGuestSide({ Catatan: 'VIP Tamu Khusus' }), null);
+  assert.strictEqual(getGuestSide({ Catatan: '' }), null);
+  assert.strictEqual(getGuestSide({ Catatan: '-' }), null);
   assert.strictEqual(getGuestSide({}), null);
+});
+
+it('Filters unlabeled guests correctly when sideFilter is "unlabeled"', () => {
+  const sampleGuests = [
+    { Nama: 'Tamu A', Catatan: 'Teman Dhifa' },
+    { Nama: 'Tamu B', Catatan: 'Teman Kiki' },
+    { Nama: 'Tamu C', Catatan: 'Keluarga Papa' },
+    { Nama: 'Tamu D', Catatan: '' },
+    { Nama: 'Tamu E', Catatan: 'Tamu VIP' },
+    { Nama: 'Tamu F' }
+  ];
+
+  const filterRowsWithSide = (rows, sideFilter) => {
+    return rows.filter(row => {
+      const guestSide = getGuestSide(row);
+      if (sideFilter === 'unlabeled') {
+        return guestSide === null;
+      }
+      if (sideFilter !== 'all') {
+        return guestSide === sideFilter;
+      }
+      return true;
+    });
+  };
+
+  const unlabeled = filterRowsWithSide(sampleGuests, 'unlabeled');
+  assert.strictEqual(unlabeled.length, 3);
+  assert.deepStrictEqual(unlabeled.map(g => g.Nama), ['Tamu D', 'Tamu E', 'Tamu F']);
+
+  const dhifaGuests = filterRowsWithSide(sampleGuests, 'dhifa');
+  assert.strictEqual(dhifaGuests.length, 1);
+  assert.strictEqual(dhifaGuests[0].Nama, 'Tamu A');
+
+  const allGuests = filterRowsWithSide(sampleGuests, 'all');
+  assert.strictEqual(allGuests.length, 6);
+});
+
+it('Verifies index.html and app.js contain unlabeled filter option and counters', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+  assert(html.includes('data-side="unlabeled"'), 'index.html must contain data-side="unlabeled"');
+  assert(html.includes('id="countSideUnlabeled"'), 'index.html must contain countSideUnlabeled element');
+
+  const appJs = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
+  assert(appJs.includes("sideFilter === 'unlabeled'"), 'app.js must handle sideFilter === "unlabeled"');
+  assert(appJs.includes('countSideUnlabeled'), 'app.js must update countSideUnlabeled');
+  assert(appJs.includes('table.sideUnlabeled'), 'app.js must have translation for table.sideUnlabeled');
 });
 
 // =============================================================================

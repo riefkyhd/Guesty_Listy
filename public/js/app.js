@@ -81,6 +81,7 @@
       'table.sideAll': 'All',
       'table.sideGroomBride': 'Wedding Couple',
       'table.sideFamily': 'Family',
+      'table.sideUnlabeled': '🏷️ Unlabeled',
       'table.filterRsvpTitle': 'Filter RSVP Attendance',
       'table.filterRsvpPrefix': 'RSVP: ',
       'table.rsvpAll': 'All RSVP',
@@ -292,6 +293,7 @@
       'table.sideAll': 'Semua',
       'table.sideGroomBride': 'Pihak Pengantin',
       'table.sideFamily': 'Keluarga',
+      'table.sideUnlabeled': '🏷️ Tanpa Label',
       'table.filterRsvpTitle': 'Filter Kehadiran RSVP',
       'table.filterRsvpPrefix': 'RSVP: ',
       'table.rsvpAll': 'Semua RSVP',
@@ -467,6 +469,7 @@
   function getSideFilterLabel(side) {
     const prefix = t('table.filterSidePrefix');
     if (side === 'all') return `${prefix}${t('table.sideAll')}`;
+    if (side === 'unlabeled') return `${prefix}${t('table.sideUnlabeled')}`;
     if (side === 'dhifa') return `${prefix}🌸 Dhifa`;
     if (side === 'riefky') return `${prefix}💼 Riefky`;
     if (side === 'abi') return `${prefix}🧔 Abi`;
@@ -477,6 +480,7 @@
   }
 
   function getSideDisplayName(side) {
+    if (side === 'unlabeled') return t('table.sideUnlabeled');
     if (side === 'dhifa') return '🌸 Dhifa';
     if (side === 'riefky') return '💼 Riefky';
     if (side === 'abi') return '🧔 Abi';
@@ -2834,8 +2838,12 @@
       const note = getGuestNote(row).toLowerCase();
       const guestSide = getGuestSide(row);
 
-      // 1. Pihak / Notes filter (Dhifa, Riefky, Abi, Umi, Papa, Mama)
-      if (sideFilter !== 'all' && guestSide !== sideFilter) return false;
+      // 1. Pihak / Notes filter (Dhifa, Riefky, Abi, Umi, Papa, Mama, Unlabeled)
+      if (sideFilter === 'unlabeled') {
+        if (guestSide !== null) return false;
+      } else if (sideFilter !== 'all' && guestSide !== sideFilter) {
+        return false;
+      }
 
       // 2. Delivery Status filter
       if (filter === 'pending' && isSent) return false;
@@ -2854,12 +2862,15 @@
     const sideFilter = state.currentSideFilter || 'all';
 
     let total = 0, totalPax = 0, sentCount = 0, sentPax = 0, withPhone = 0, withPhonePax = 0;
+    let globalTotal = 0;
     let dhifaCount = 0, riefkyCount = 0, abiCount = 0, umiCount = 0, papaCount = 0, mamaCount = 0;
+    let unlabeledCount = 0;
 
     state.rawRows.forEach((row, idx) => {
       const name = (row['Nama'] || row['Name'] || row['name'] || '').toString().trim();
       if (!name || name.toLowerCase() === 'undefined') return;
 
+      globalTotal++;
       const pax = parseInt(row['Jumlah Tamu'] || row['Pax'] || row['pax'] || 1, 10) || 1;
       const hasPhone = normalizePhone(row[state.phoneColumn]).isValid;
       const isSent = isRowSent(row, idx);
@@ -2871,10 +2882,14 @@
       else if (side === 'umi') umiCount++;
       else if (side === 'papa') papaCount++;
       else if (side === 'mama') mamaCount++;
+      else unlabeledCount++;
 
       // When sideFilter is set, calculate the stats for that specific side;
       // When sideFilter is 'all', calculate global total across all guests
-      if (sideFilter === 'all' || side === sideFilter) {
+      const matchesSide = (sideFilter === 'all') ||
+                          (sideFilter === 'unlabeled' ? side === null : side === sideFilter);
+
+      if (matchesSide) {
         total++;
         totalPax += pax;
         if (hasPhone) {
@@ -2933,7 +2948,11 @@
     const q = state.searchQuery.toLowerCase().trim();
     const sideSearchFiltered = state.rawRows.map((row, originalIndex) => ({ row, originalIndex })).filter(({ row, originalIndex }) => {
       const guestSide = getGuestSide(row);
-      if (sideFilter !== 'all' && guestSide !== sideFilter) return false;
+      if (sideFilter === 'unlabeled') {
+        if (guestSide !== null) return false;
+      } else if (sideFilter !== 'all' && guestSide !== sideFilter) {
+        return false;
+      }
       if (q) {
         const name = (row['Nama'] || row['Name'] || '').toString().toLowerCase();
         const label = (row['Label'] || '').toString().toLowerCase();
@@ -2992,13 +3011,15 @@
     const countSideUmiEl = document.getElementById('countSideUmi');
     const countSidePapaEl = document.getElementById('countSidePapa');
     const countSideMamaEl = document.getElementById('countSideMama');
-    if (countSideAllEl) countSideAllEl.textContent = total;
+    const countSideUnlabeledEl = document.getElementById('countSideUnlabeled');
+    if (countSideAllEl) countSideAllEl.textContent = globalTotal;
     if (countSideDhifaEl) countSideDhifaEl.textContent = dhifaCount;
     if (countSideRiefkyEl) countSideRiefkyEl.textContent = riefkyCount;
     if (countSideAbiEl) countSideAbiEl.textContent = abiCount;
     if (countSideUmiEl) countSideUmiEl.textContent = umiCount;
     if (countSidePapaEl) countSidePapaEl.textContent = papaCount;
     if (countSideMamaEl) countSideMamaEl.textContent = mamaCount;
+    if (countSideUnlabeledEl) countSideUnlabeledEl.textContent = unlabeledCount;
 
     // RSVP Filter Dropdown counters (dynamically scoped to sideSearchFiltered)
     const countRsvpAllEl = document.getElementById('countRsvpAll');
@@ -3570,6 +3591,7 @@
     // Notes / Pihak Filter Dropdown
     const SIDE_FILTER_LABELS = {
       all: 'Filter: Semua',
+      unlabeled: 'Filter: 🏷️ Tanpa Label',
       dhifa: 'Filter: 🌸 Dhifa',
       riefky: 'Filter: 💼 Riefky',
       abi: 'Filter: 🧔 Abi',
@@ -3601,7 +3623,7 @@
         });
 
         if (dom.sideFilterSelectedText) {
-          dom.sideFilterSelectedText.textContent = SIDE_FILTER_LABELS[selectedSide] || 'Filter: Semua';
+          dom.sideFilterSelectedText.textContent = getSideFilterLabel(selectedSide);
         }
 
         if (dom.btnSideFilterDropdown) {
