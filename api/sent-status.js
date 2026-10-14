@@ -25,14 +25,24 @@ module.exports = async function handler(req, res) {
 
   // GET /api/sent-status — return all sent statuses as { guestKey: boolean }
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('sent_statuses')
-      .select('guest_key, is_sent');
+    let allRows = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .from('sent_statuses')
+        .select('guest_key, is_sent')
+        .range(from, from + pageSize - 1);
 
-    if (error) return res.status(500).json({ error: error.message });
+      if (pageErr) return res.status(500).json({ error: pageErr.message });
+      if (!page || page.length === 0) break;
+      allRows.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
 
     const result = {};
-    (data || []).forEach(row => {
+    allRows.forEach(row => {
       if (row.is_sent) result[row.guest_key] = true;
     });
     return res.status(200).json({ sentStatuses: result });
@@ -86,9 +96,22 @@ module.exports = async function handler(req, res) {
     }
 
     // Clean up obsolete keys
-    const { data: existingData } = await supabase.from('sent_statuses').select('guest_key');
+    let existingData = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .from('sent_statuses')
+        .select('guest_key')
+        .range(from, from + pageSize - 1);
+      if (pageErr) return res.status(500).json({ error: pageErr.message });
+      if (!page || page.length === 0) break;
+      existingData.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
     const activeSet = new Set(activeKeys);
-    const toDelete = (existingData || []).map(r => r.guest_key).filter(k => !activeSet.has(k));
+    const toDelete = existingData.map(r => r.guest_key).filter(k => !activeSet.has(k));
     if (toDelete.length > 0) {
       const { error: delErr } = await supabase.from('sent_statuses').delete().in('guest_key', toDelete);
       if (delErr) return res.status(500).json({ error: delErr.message });

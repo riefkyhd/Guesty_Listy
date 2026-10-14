@@ -432,6 +432,7 @@ async function runApiTests() {
     await sentHandler(req, res);
     assert.strictEqual(res.statusCode, 200);
     assert(res.body && typeof res.body.sentStatuses === 'object', 'sentStatuses must be an object');
+    assert(Object.keys(res.body.sentStatuses).length > 1000, 'sentStatuses must return all paginated records beyond default 1000-row limit');
   });
 
   await itAsync('API /api/rsvp-status returns rsvpStatuses map', async () => {

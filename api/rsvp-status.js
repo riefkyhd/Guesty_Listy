@@ -25,14 +25,24 @@ module.exports = async function handler(req, res) {
 
   // GET /api/rsvp-status — return all rsvp statuses as { [guestKey]: status }
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('rsvp_statuses')
-      .select('guest_key, status');
+    let allRows = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .from('rsvp_statuses')
+        .select('guest_key, status')
+        .range(from, from + pageSize - 1);
 
-    if (error) return res.status(500).json({ error: error.message });
+      if (pageErr) return res.status(500).json({ error: pageErr.message });
+      if (!page || page.length === 0) break;
+      allRows.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
 
     const result = {};
-    (data || []).forEach(row => {
+    allRows.forEach(row => {
       if (row.status && row.status !== 'pending') {
         result[row.guest_key] = row.status;
       }
@@ -87,9 +97,22 @@ module.exports = async function handler(req, res) {
     }
 
     // Clean up obsolete keys
-    const { data: existingData } = await supabase.from('rsvp_statuses').select('guest_key');
+    let existingData = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .from('rsvp_statuses')
+        .select('guest_key')
+        .range(from, from + pageSize - 1);
+      if (pageErr) return res.status(500).json({ error: pageErr.message });
+      if (!page || page.length === 0) break;
+      existingData.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
     const activeSet = new Set(nonPendingKeys);
-    const toDelete = (existingData || []).map(r => r.guest_key).filter(k => !activeSet.has(k));
+    const toDelete = existingData.map(r => r.guest_key).filter(k => !activeSet.has(k));
     if (toDelete.length > 0) {
       const { error: delErr } = await supabase.from('rsvp_statuses').delete().in('guest_key', toDelete);
       if (delErr) return res.status(500).json({ error: delErr.message });

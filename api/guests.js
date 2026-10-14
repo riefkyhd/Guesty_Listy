@@ -25,13 +25,24 @@ module.exports = async function handler(req, res) {
 
   // GET /api/guests — fetch all stored guests
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('guests')
-      .select('row_index, raw_data')
-      .order('row_index', { ascending: true });
+    let allRows = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: page, error: pageErr } = await supabase
+        .from('guests')
+        .select('row_index, raw_data')
+        .order('row_index', { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ guests: data });
+      if (pageErr) return res.status(500).json({ error: pageErr.message });
+      if (!page || page.length === 0) break;
+      allRows.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return res.status(200).json({ guests: allRows });
   }
 
   // POST /api/guests — replace entire guest list with new parsed rows, and optionally update sent statuses atomically
